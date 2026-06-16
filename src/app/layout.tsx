@@ -68,6 +68,9 @@ export const metadata: Metadata = {
       "Social media, paid ads, websites and content — all handled by one local team in Waterford, Ireland.",
     images: ["/hero-image.png"],
   },
+  verification: {
+    google: "lSniQTzNQ4vT1rW-C4xFHNA3uK67GetwoUgPdqblgMQ",
+  },
   robots: {
     index: true,
     follow: true,
