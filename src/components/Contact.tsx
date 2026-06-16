@@ -48,13 +48,13 @@ export default function Contact() {
 
                 <div className="mt-10 flex flex-col gap-4 text-cream/80">
                   <a
-                    href="mailto:hello@irishbusinessboosters.ie"
+                    href="mailto:hello@irishbusinessboosters.com"
                     className="flex items-center gap-3 transition-colors hover:text-teal"
                   >
                     <span className="grid h-10 w-10 place-items-center rounded-full bg-cream/10">
                       <Mail size={18} />
                     </span>
-                    hello@irishbusinessboosters.ie
+                    hello@irishbusinessboosters.com
                   </a>
                   <div className="flex items-center gap-3">
                     <span className="grid h-10 w-10 place-items-center rounded-full bg-cream/10">

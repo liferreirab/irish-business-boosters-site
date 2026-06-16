@@ -56,10 +56,10 @@ export default function Footer() {
               ))}
               <li>
                 <a
-                  href="mailto:hello@irishbusinessboosters.ie"
+                  href="mailto:hello@irishbusinessboosters.com"
                   className="transition-colors hover:text-coral"
                 >
-                  hello@irishbusinessboosters.ie
+                  hello@irishbusinessboosters.com
                 </a>
               </li>
               <li className="text-mid-grey">Waterford, Ireland</li>
