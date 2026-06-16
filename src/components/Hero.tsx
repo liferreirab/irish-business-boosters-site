@@ -1,8 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Image from "next/image";
 import AnimatedButton from "./ui/AnimatedButton";
+
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 export default function Hero() {
   return (
@@ -87,12 +88,13 @@ export default function Hero() {
 
           {/* image container */}
           <div className="relative overflow-hidden rounded-[2rem] shadow-[0_32px_80px_-20px_rgba(44,44,42,0.32)]">
-            <Image
-              src="/hero-image.png"
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`${BASE_PATH}/hero-image.png`}
               alt="Irish Business Boosters team working with a local client"
               width={720}
               height={480}
-              priority
+              fetchPriority="high"
               className="h-auto w-full object-cover object-center"
               style={{ aspectRatio: "4/3" }}
             />
