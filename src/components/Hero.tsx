@@ -1,8 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import AnimatedButton from "./ui/AnimatedButton";
-import HeroScene from "./HeroScene";
 
 export default function Hero() {
   return (
@@ -15,6 +15,7 @@ export default function Hero() {
       <div className="blob animate-float-slower h-[22rem] w-[22rem] bg-teal/20 right-[-6rem] top-1/3" />
 
       <div className="relative mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-12 px-6 lg:grid-cols-2 lg:px-8">
+        {/* Left — copy */}
         <div className="relative z-10">
           <motion.p
             initial={{ opacity: 0, y: 16 }}
@@ -72,10 +73,45 @@ export default function Hero() {
           </motion.div>
         </div>
 
-        {/* 3D scene */}
-        <div className="relative h-[22rem] lg:h-[32rem]">
-          <HeroScene />
-        </div>
+        {/* Right — hero image */}
+        <motion.div
+          initial={{ opacity: 0, y: 32, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.9, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          className="relative"
+        >
+          {/* decorative accent ring behind image */}
+          <div className="absolute -bottom-5 -right-5 h-full w-full rounded-[2rem] border-2 border-coral/25" />
+          {/* teal dot accent */}
+          <div className="absolute -top-4 -left-4 h-14 w-14 rounded-full bg-teal/30 blur-md" />
+
+          {/* image container */}
+          <div className="relative overflow-hidden rounded-[2rem] shadow-[0_32px_80px_-20px_rgba(44,44,42,0.32)]">
+            <Image
+              src="/hero-image.png"
+              alt="Irish Business Boosters team working with a local client"
+              width={720}
+              height={480}
+              priority
+              className="h-auto w-full object-cover object-center"
+              style={{ aspectRatio: "4/3" }}
+            />
+            {/* subtle gradient overlay at bottom for polish */}
+            <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-ink/10 to-transparent" />
+          </div>
+
+          {/* floating badge */}
+          <motion.div
+            animate={{ y: [0, -6, 0] }}
+            transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+            className="absolute -bottom-6 left-6 flex items-center gap-3 rounded-full bg-cream px-5 py-3 shadow-[0_8px_30px_-8px_rgba(44,44,42,0.22)]"
+          >
+            <span className="h-2.5 w-2.5 rounded-full bg-teal" />
+            <span className="font-sans text-sm font-semibold text-ink">
+              One team. Real results.
+            </span>
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );
