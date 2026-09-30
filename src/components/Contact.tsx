@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, MapPin, CheckCircle2 } from "lucide-react";
+import InstagramIcon, { INSTAGRAM_URL, INSTAGRAM_HANDLE } from "./ui/InstagramIcon";
 import Reveal from "./ui/Reveal";
 
 const INTERESTS = [
@@ -55,6 +56,17 @@ export default function Contact() {
                       <Mail size={18} />
                     </span>
                     hello@irishbusinessboosters.com
+                  </a>
+                  <a
+                    href={INSTAGRAM_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 transition-colors hover:text-teal"
+                  >
+                    <span className="grid h-10 w-10 place-items-center rounded-full bg-cream/10">
+                      <InstagramIcon size={18} />
+                    </span>
+                    {INSTAGRAM_HANDLE}
                   </a>
                   <div className="flex items-center gap-3">
                     <span className="grid h-10 w-10 place-items-center rounded-full bg-cream/10">

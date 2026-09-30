@@ -33,7 +33,7 @@ const jsonLd = {
     { "@type": "Country", name: "Ireland" },
     { "@type": "City", name: "Waterford" },
   ],
-  sameAs: [],
+  sameAs: ["https://www.instagram.com/irish.business.boosters/"],
   hasOfferCatalog: {
     "@type": "OfferCatalog",
     name: "Digital Marketing Services",

@@ -1,4 +1,5 @@
 import { TrendingUp } from "lucide-react";
+import InstagramIcon, { INSTAGRAM_URL, INSTAGRAM_HANDLE } from "./ui/InstagramIcon";
 
 const SERVICE_LINKS = [
   "Social Media",
@@ -29,6 +30,16 @@ export default function Footer() {
             <p className="mt-5 max-w-sm font-display text-2xl italic leading-snug text-ink/80">
               Let&apos;s grow together.
             </p>
+            <a
+              href={INSTAGRAM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Irish Business Boosters on Instagram"
+              className="mt-6 inline-flex items-center gap-2 text-sm text-body transition-colors hover:text-coral"
+            >
+              <InstagramIcon size={20} />
+              {INSTAGRAM_HANDLE}
+            </a>
           </div>
 
           <div>
