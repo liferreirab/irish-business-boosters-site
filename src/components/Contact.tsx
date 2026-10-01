@@ -6,6 +6,9 @@ import { Mail, MapPin, CheckCircle2 } from "lucide-react";
 import InstagramIcon, { INSTAGRAM_URL, INSTAGRAM_HANDLE } from "./ui/InstagramIcon";
 import Reveal from "./ui/Reveal";
 
+// Supabase Edge Function that stores the lead in the CRM and emails us.
+const LEAD_ENDPOINT = "https://tbgxeqauakiydzwmqyyf.supabase.co/functions/v1/site-lead";
+
 const INTERESTS = [
   "Social Media",
   "Paid Ads",
@@ -16,11 +19,29 @@ const INTERESTS = [
 
 export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [interest, setInterest] = useState(INTERESTS[0]);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSubmitted(true);
+    if (sending) return;
+    setSending(true);
+    setFailed(false);
+    const data = Object.fromEntries(new FormData(e.currentTarget));
+    try {
+      const res = await fetch(LEAD_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...data, interest }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setSubmitted(true);
+    } catch {
+      setFailed(true);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -117,7 +138,16 @@ export default function Contact() {
                       onSubmit={handleSubmit}
                       className="grid grid-cols-1 gap-4 rounded-3xl bg-cream/[0.06] p-6 backdrop-blur-sm sm:grid-cols-2 sm:p-8"
                     >
-                      <Field label="Name" name="name" className="sm:col-span-1" />
+                      {/* Honeypot: hidden from people, bots fill it in. */}
+                      <input
+                        type="text"
+                        name="website"
+                        tabIndex={-1}
+                        autoComplete="off"
+                        aria-hidden="true"
+                        className="absolute -left-[9999px] h-0 w-0 opacity-0"
+                      />
+                      <Field label="Name" name="name" required className="sm:col-span-1" />
                       <Field
                         label="Business Name"
                         name="business"
@@ -127,6 +157,7 @@ export default function Contact() {
                         label="Email"
                         name="email"
                         type="email"
+                        required
                         className="sm:col-span-1"
                       />
                       <Field
@@ -170,8 +201,19 @@ export default function Contact() {
                         />
                       </div>
 
+                      {failed && (
+                        <p role="alert" className="sm:col-span-2 text-sm text-coral">
+                          Sorry, something went wrong. Please try again or email us at{" "}
+                          <a href="mailto:hello@irishbusinessboosters.com" className="underline">
+                            hello@irishbusinessboosters.com
+                          </a>
+                          .
+                        </p>
+                      )}
+
                       <motion.button
                         type="submit"
+                        disabled={sending}
                         whileHover={{ y: -2, scale: 1.02 }}
                         whileTap={{ scale: 0.97 }}
                         transition={{
@@ -179,9 +221,9 @@ export default function Contact() {
                           stiffness: 400,
                           damping: 20,
                         }}
-                        className="sm:col-span-2 mt-2 inline-flex items-center justify-center rounded-full bg-coral px-7 py-3.5 font-sans text-sm font-semibold text-cream shadow-[0_8px_24px_-8px_rgba(216,90,48,0.55)] transition-colors hover:bg-coral-hover"
+                        className="sm:col-span-2 mt-2 inline-flex items-center justify-center rounded-full bg-coral px-7 py-3.5 font-sans text-sm font-semibold text-cream shadow-[0_8px_24px_-8px_rgba(216,90,48,0.55)] transition-colors hover:bg-coral-hover disabled:cursor-wait disabled:opacity-70"
                       >
-                        Send Message
+                        {sending ? "Sending..." : "Send Message"}
                       </motion.button>
                     </motion.form>
                   )}
@@ -199,11 +241,13 @@ function Field({
   label,
   name,
   type = "text",
+  required = false,
   className = "",
 }: {
   label: string;
   name: string;
   type?: string;
+  required?: boolean;
   className?: string;
 }) {
   return (
@@ -214,6 +258,7 @@ function Field({
       <input
         type={type}
         name={name}
+        required={required}
         className="w-full rounded-xl border border-cream/15 bg-cream/5 px-4 py-3 text-cream placeholder:text-cream/30 focus:border-teal focus:outline-none"
       />
     </div>
