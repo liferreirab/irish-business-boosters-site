@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Lora, Work_Sans } from "next/font/google";
 import "./globals.css";
+import MetaPixel from "@/components/MetaPixel";
 
 const lora = Lora({
   variable: "--font-lora",
@@ -95,6 +96,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-cream text-ink font-sans">
         {children}
+        <MetaPixel />
       </body>
     </html>
   );

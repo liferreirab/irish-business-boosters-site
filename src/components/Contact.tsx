@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mail, MapPin, CheckCircle2 } from "lucide-react";
 import InstagramIcon, { INSTAGRAM_URL, INSTAGRAM_HANDLE } from "./ui/InstagramIcon";
 import Reveal from "./ui/Reveal";
+import { trackPixel } from "@/lib/metaPixel";
 
 // Supabase Edge Function that stores the lead in the CRM and emails us.
 const LEAD_ENDPOINT = "https://tbgxeqauakiydzwmqyyf.supabase.co/functions/v1/site-lead";
@@ -36,6 +37,7 @@ export default function Contact() {
         body: JSON.stringify({ ...data, interest }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      trackPixel("Lead", { content_name: "contact_form", interest });
       setSubmitted(true);
     } catch {
       setFailed(true);

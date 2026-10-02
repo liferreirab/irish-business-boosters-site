@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, AlertTriangle, Info, Loader2 } from "lucide-react";
+import { trackPixel } from "@/lib/metaPixel";
 
 // Supabase Edge Function: saves the lead, runs the automatic check, emails us.
 const CHECK_ENDPOINT = "https://tbgxeqauakiydzwmqyyf.supabase.co/functions/v1/check";
@@ -147,6 +148,7 @@ export default function CheckForm() {
       });
       const body = await res.json();
       if (!res.ok || !body.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+      trackPixel("Lead", { content_name: "check_form", keyword });
       setState({ step: "results", leadId: body.leadId, automatic: body.automatic, findings: body.findings ?? [] });
     } catch {
       setState({ step: "form" });
@@ -166,6 +168,7 @@ export default function CheckForm() {
         body: JSON.stringify({ action: "call", leadId, preference }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      trackPixel("Schedule", { content_name: "check_call_request" });
       setState({ step: "call-sent" });
     } catch {
       setError("Sorry, that didn't go through. Please try again or email hello@irishbusinessboosters.com.");
