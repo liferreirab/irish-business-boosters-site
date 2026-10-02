@@ -88,6 +88,22 @@ const COPY: Record<string, KeywordCopy> = {
     businessLabel: "Your business page name",
     automatic: false,
   },
+  hire: {
+    overline: "Free Instagram check",
+    title: "What is your Instagram missing?",
+    intro: "Tell us your business's Instagram. We'll have a proper look (bio, posts, how easy it is to contact you) and email you exactly what's missing and how to fix it.",
+    ask: "business",
+    businessLabel: "Your Instagram @ (or business name)",
+    automatic: false,
+  },
+  grid: {
+    overline: "Your own 6×5 grid",
+    title: "30 post ideas made for your business",
+    intro: "Not a café, salon or trade? Tell us what you do and where. We'll fill in a 6×5 grid just for you and email it over.",
+    ask: "business",
+    businessLabel: "What kind of business is it?",
+    automatic: false,
+  },
 };
 
 const DEFAULT_COPY: KeywordCopy = {

@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>The 6×5 Content Grid</title>
+<meta name="description" content="30 days of posts, planned in 30 minutes. The 6×5 content grid from Irish Business Boosters.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,600;0,700;1,600;1,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --coral:#D85A30; --teal:#5DCAA5; --dark:#2C2C2A; --cream:#F1EFE8; --line:#E2DED3; --muted:#6B6A64; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--cream); color:var(--dark); font:16px/1.6 "Work Sans",system-ui,sans-serif; }
+  .wrap { max-width:980px; margin:0 auto; padding:32px 16px 64px; }
+  header { padding-bottom:20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  .brand { display:inline-flex; align-items:center; gap:8px; color:var(--coral); text-decoration:none; }
+  .brand span { font:700 20px/1 Lora,serif; color:var(--dark); white-space:nowrap; }
+  .brand em { font-style:italic; color:var(--coral); }
+  .over { color:var(--coral); font-weight:600; letter-spacing:.08em; text-transform:uppercase; font-size:13px; margin:36px 0 8px; }
+  h1 { font:700 clamp(32px,7vw,52px)/1.1 Lora,serif; margin:0 0 12px; }
+  h1 em { color:var(--coral); }
+  h2 { font:700 24px/1.25 Lora,serif; margin:44px 0 14px; }
+  .lead { font-size:18px; max-width:640px; }
+  .steps { display:grid; gap:12px; margin:20px 0; }
+  @media (min-width:720px) { .steps { grid-template-columns:repeat(3,1fr); } }
+  .step { background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px 18px; }
+  .step b { display:block; font:700 18px/1.3 Lora,serif; margin-bottom:4px; }
+  .step .n { color:var(--coral); }
+
+  .tabs { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 6px; }
+  .tab { border:2px solid var(--dark); background:#fff; color:var(--dark); font:600 15px "Work Sans",sans-serif; padding:9px 16px; border-radius:999px; cursor:pointer; }
+  .tab[aria-selected="true"] { background:var(--dark); color:var(--cream); }
+  .hint { color:var(--muted); font-size:14px; margin:0 0 16px; }
+
+  /* the grid (desktop) */
+  .grid-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:separate; border-spacing:0; background:#fff; border:2px solid var(--dark); border-radius:14px; overflow:hidden; font-size:14px; table-layout:fixed; min-width:820px; }
+  th, td { padding:10px 10px; border-right:1px solid var(--line); border-bottom:1px solid var(--line); vertical-align:top; text-align:left; }
+  thead th { background:var(--dark); color:var(--cream); font-weight:600; font-size:13px; }
+  thead th:first-child { width:120px; }
+  tbody th { background:#FBEDE7; font-weight:700; font-size:13px; }
+  td .d { display:inline-block; font-weight:700; color:var(--coral); font-size:12px; margin-bottom:2px; }
+  td.blank { height:92px; }
+
+  /* the list (phones) */
+  .days { display:none; }
+  .day { background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px 16px; margin:10px 0; display:grid; grid-template-columns:54px 1fr; gap:10px; align-items:start; }
+  .day .num { font:700 26px/1 Lora,serif; color:var(--coral); }
+  .day .num small { display:block; font:600 11px "Work Sans",sans-serif; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; margin-bottom:2px; }
+  .day .tags { font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+  .day .tags b { color:var(--dark); }
+  .day p { margin:2px 0 0; }
+  .day.blank p { height:40px; border-bottom:1px dashed var(--line); }
+  @media (max-width:720px) { .grid-wrap { display:none; } .days { display:block; } }
+
+  .formats { display:grid; gap:10px; margin:14px 0; }
+  @media (min-width:720px) { .formats { grid-template-columns:repeat(5,1fr); } }
+  .fmt { background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px 16px; }
+  .fmt b { display:block; font:700 italic 17px/1.3 Lora,serif; color:var(--coral); }
+  .fmt span { font-size:14px; }
+
+  .tools { display:flex; flex-wrap:wrap; gap:10px; margin:18px 0 0; }
+  .btn { display:inline-block; background:var(--coral); color:#fff; text-decoration:none; font:600 15px "Work Sans",sans-serif; padding:12px 20px; border-radius:999px; border:0; cursor:pointer; }
+  .btn.ghost { background:transparent; color:var(--dark); border:2px solid var(--dark); }
+  .cta { background:var(--dark); color:var(--cream); border-radius:18px; padding:28px 24px; margin-top:48px; }
+  .cta h2 { color:#fff; margin-top:0; }
+  .small { font-size:13px; color:var(--muted); margin-top:40px; }
+  .small a { color:var(--muted); }
+
+  @media print {
+    body { background:#fff; font-size:11px; }
+    .wrap { max-width:none; padding:0; }
+    .tabs, .hint, .tools, .cta, .steps, .formats-section, .small, .no-print { display:none !important; }
+    .grid-wrap { display:block !important; overflow:visible; }
+    .days { display:none !important; }
+    table { min-width:0; font-size:10px; }
+    h1 { font-size:26px; }
+    @page { size:A4 landscape; margin:12mm; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="brand" href="https://irishbusinessboosters.com" aria-label="Irish Business Boosters">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+      <span><em>Irish</em> Business Boosters</span>
+    </a>
+  </header>
+
+  <p class="over">The 6×5 content grid</p>
+  <h1>30 days of posts, planned in <em>30 minutes.</em></h1>
+  <p class="lead">Six topics your customers care about. Five formats that work on Reels. Put them in a grid and you've got a post for every day of the month, so you never sit there thinking "what do I post?" again.</p>
+
+  <div class="steps no-print">
+    <div class="step"><b><span class="n">1.</span> Pick your business</b>Choose your type of business below. We've already filled in 30 ideas for you.</div>
+    <div class="step"><b><span class="n">2.</span> One a day</b>Day 1 is the first idea, Day 2 the next. It rotates through the topics, so your feed never gets repetitive.</div>
+    <div class="step"><b><span class="n">3.</span> Film it, post it</b>On the day, you don't decide what to post. You look at the grid. Done.</div>
+  </div>
+
+  <h2 id="ideas-title">Your 30 ideas</h2>
+  <div class="tabs" role="tablist" aria-label="Type of business">
+    <button class="tab" role="tab" data-n="cafe">Café &amp; food</button>
+    <button class="tab" role="tab" data-n="salon">Salon &amp; beauty</button>
+    <button class="tab" role="tab" data-n="trades">Trades</button>
+    <button class="tab" role="tab" data-n="blank">Blank grid (fill your own)</button>
+  </div>
+  <p class="hint" id="hint">Swap anything that doesn't fit. "Your town" means your actual town: name it in the post.</p>
+  <p class="hint no-print">Not a café, salon or trade? <a href="https://irishbusinessboosters.com/check?k=grid&amp;ch=ig" style="color:var(--coral);font-weight:600">Tell us what you do</a> and we'll fill in a grid just for you.</p>
+
+  <div class="grid-wrap"><table id="grid"></table></div>
+  <div class="days" id="days"></div>
+
+  <div class="tools">
+    <button class="btn" onclick="window.print()">Save as PDF / print</button>
+    <a class="btn ghost" href="#formats">What do the formats mean?</a>
+  </div>
+
+  <section class="formats-section">
+    <h2 id="formats">The five formats</h2>
+    <div class="formats">
+      <div class="fmt"><b>POV</b><span>Film from your eyes. Text on screen: "POV: …". Short, no talking needed.</span></div>
+      <div class="fmt"><b>Before &amp; after</b><span>Two clips or photos, the "before" first. The reveal does the work.</span></div>
+      <div class="fmt"><b>Customer question</b><span>A real question you get asked, answered in under 30 seconds.</span></div>
+      <div class="fmt"><b>A day in 15 seconds</b><span>Lots of 1-second clips through the day. Add music, no talking.</span></div>
+      <div class="fmt"><b>Hot take</b><span>A friendly unpopular opinion. People love to disagree in the comments.</span></div>
+    </div>
+  </section>
+
+  <div class="cta">
+    <h2>Too busy to film it?</h2>
+    <p>That's what we're here for. We plan it, film it, edit it and post it, so your Instagram keeps working while you're doing the actual work.</p>
+    <a class="btn" href="https://ig.me/m/irish.business.boosters">Send us a message</a>
+  </div>
+
+  <p class="small">Made by <a href="https://irishbusinessboosters.com">Irish Business Boosters</a>, social media for Irish small businesses.</p>
+</div>
+
+<script>
+const FORMATS = ["POV", "Before & after", "Customer question", "A day in 15 seconds", "Hot take"];
+
+// For each business: 6 topics, and for each topic one idea per format (same order as FORMATS).
+const DATA = {
+  cafe: {
+    topics: ["The food", "The team", "Your regulars", "Behind the scenes", "Your town", "The weather"],
+    ideas: [
+      ["POV: the scones just came out of the oven and you're first in", "A bag of flour → today's full bake tray", "\"Are the scones made here?\" Show it, from bowl to plate", "One cake, from mixing bowl to last slice", "Jam first, then cream. Fight us."],
+      ["POV: you're the barista at 8:59 on a Monday", "New starter's latte art: day 1 vs. week 4", "\"Who makes the coffee?\" Introduce them in 10 seconds", "A shift behind the counter", "Our team's most controversial coffee order"],
+      ["POV: your regular walks in and the order's already made", "A regular's first visit vs. their 100th (ask them first!)", "Ask a regular: \"Why do you keep coming back?\"", "The 7am crowd, the 11am crowd, the 3pm crowd", "The best seat in the house, and who always gets it"],
+      ["POV: it's 6am and you're unlocking the door", "Closing time chaos → ready for tomorrow", "\"What time do you start?\" Show the morning", "Opening up the café", "The one job nobody on the team wants"],
+      ["POV: the walk to us from the main street", "Your street 10 years ago vs. today", "\"What's good to see nearby?\" Your top 3 picks", "Market day or match day in town", "The most underrated spot in town (that isn't us)"],
+      ["POV: it's lashing rain and you need a hot chocolate", "Grey sky outside → cosy corner inside", "\"Is it soup weather?\" (It's always soup weather)", "Four seasons in one day, seen from our window", "Iced coffee in Irish weather: genius or madness?"],
+    ],
+  },
+  salon: {
+    topics: ["The results", "The team", "Your clients", "Behind the scenes", "Your town", "The weather"],
+    ideas: [
+      ["POV: the mirror reveal at the end of the appointment", "This week's favourite transformation", "\"Will balayage suit me?\" Show 3 different results", "One colour appointment, start to finish", "You don't need to wash your hair every day"],
+      ["POV: a client says \"just a trim\"", "The salon on day one vs. the team now", "\"Who should I book with?\" Each stylist's speciality in one line", "A Saturday behind the chair", "The beauty trend our team can't agree on"],
+      ["POV: your client shows you a photo from Pinterest", "A regular client's look over the years (ask them first!)", "The question clients ask most in the chair, answered", "The lunch-break fringe, the Friday blow-dry, the Saturday colour", "The habit that secretly ruins your colour"],
+      ["POV: it's 8am and you're setting up the stations", "Messy trolley → ready for the first client", "\"What products do you use?\" Show the shelf", "Opening the salon", "The tool we couldn't live without (and the one we never use)"],
+      ["POV: getting ready for a night out in town", "Wedding season: the trial vs. the big day", "\"Where's good to go after?\" Your picks in town", "A debs or wedding Saturday", "The best spot in town for photos after your appointment"],
+      ["POV: you just got a blow-dry and it starts raining", "Frizzy hair on a damp day → smooth, one appointment", "\"How do I keep my hair in the Irish rain?\" 3 quick tips", "Hair vs. Irish weather: a survival guide", "Umbrellas don't work in Ireland. Hoods do."],
+    ],
+  },
+  trades: {
+    topics: ["The work", "The team & van", "Your customers", "Behind the scenes", "Your area", "The weather"],
+    ideas: [
+      ["POV: the customer sees the finished job for the first time", "This week's best job, before and after", "\"How long does it take?\" Show the job, sped up", "One full job, start to finish", "The cheap fix that costs you more in the end"],
+      ["POV: it's 7am and you're loading the van", "Your first van vs. the van now", "\"Who's coming to my house?\" Introduce the team", "A day on the road", "The first tool every apprentice should buy"],
+      ["POV: the customer says \"my brother-in-law had a go at it first\"", "The customer's message before vs. their review after", "The question every customer asks on the phone, answered", "From the first call to the finished job", "The thing customers do that makes the job twice as long"],
+      ["POV: the supplier run at half seven", "Messy van → organised van", "\"Why does a quote take time?\" Show what you check", "The jobs nobody sees: quotes, invoices, supplier runs", "Jobs that look easy but really aren't"],
+      ["POV: driving to a job through your area", "A street you've worked on, then vs. now", "\"Do you cover my town?\" Show where you work on a map", "Five towns in one day", "The best chipper in your area after a long job"],
+      ["POV: the forecast said \"dry spells\"", "Storm damage → fixed", "\"Can you work in the rain?\" What you can and can't do", "A wet Tuesday on the job", "The best time of year to book (it's not when you think)"],
+    ],
+  },
+};
+
+const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+const dayOf = (topic, format) => format * 6 + topic + 1; // rotates through the topics, one a day
+
+function render(n) {
+  const blank = n === "blank";
+  const d = blank ? { topics: Array(6).fill(""), ideas: null } : DATA[n];
+  const topicLabel = (t, i) => (blank ? `Topic ${i + 1}` : t);
+
+  // table: formats down, topics across
+  let h = "<thead><tr><th></th>" + d.topics.map((t, i) => `<th>${esc(topicLabel(t, i))}</th>`).join("") + "</tr></thead><tbody>";
+  FORMATS.forEach((f, fi) => {
+    h += `<tr><th>${esc(f)}</th>`;
+    d.topics.forEach((_, ti) => {
+      const day = dayOf(ti, fi);
+      h += blank ? `<td class="blank"><span class="d">Day ${day}</span></td>` : `<td><span class="d">Day ${day}</span><br>${esc(d.ideas[ti][fi])}</td>`;
+    });
+    h += "</tr>";
+  });
+  document.getElementById("grid").innerHTML = h + "</tbody>";
+
+  // list by day
+  let l = "";
+  for (let day = 1; day <= 30; day++) {
+    const fi = Math.floor((day - 1) / 6), ti = (day - 1) % 6;
+    l += `<div class="day${blank ? " blank" : ""}"><div class="num"><small>Day</small>${day}</div><div><div class="tags"><b>${esc(topicLabel(d.topics[ti], ti))}</b> · ${esc(FORMATS[fi])}</div><p>${blank ? "" : esc(d.ideas[ti][fi])}</p></div></div>`;
+  }
+  document.getElementById("days").innerHTML = l;
+
+  document.querySelectorAll(".tab").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.n === n)));
+  document.getElementById("hint").textContent = blank
+    ? "Write your 6 topics across the top, then one idea per square. Save as PDF or print it and stick it on the wall."
+    : "Swap anything that doesn't fit. \"Your town\" means your actual town: name it in the post.";
+  if (location.hash.slice(1) !== n) history.replaceState(null, "", "#" + n);
+}
+
+document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => render(b.dataset.n)));
+const fromHash = () => {
+  const n = location.hash.slice(1);
+  render(["cafe", "salon", "trades", "blank"].includes(n) ? n : "cafe");
+};
+// only react to the niche hashes, so the "#formats" link doesn't reset the grid
+window.addEventListener("hashchange", () => ["cafe", "salon", "trades", "blank"].includes(location.hash.slice(1)) && fromHash());
+fromHash();
+</script>
+</body>
+</html>
