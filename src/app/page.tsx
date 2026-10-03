@@ -13,7 +13,7 @@ const jsonLd = {
   "@id": "https://irishbusinessboosters.com/#business",
   name: "Irish Business Boosters",
   description:
-    "Full-service digital marketing agency for small and medium-sized businesses in Ireland. Social media management, paid advertising, website creation, and content production based in Waterford.",
+    "Full-service digital marketing agency for Irish businesses. Social media management, paid advertising, website creation, and content production based in Waterford.",
   url: "https://irishbusinessboosters.com",
   email: "hello@irishbusinessboosters.com",
   image: "https://irishbusinessboosters.com/hero-image.png",

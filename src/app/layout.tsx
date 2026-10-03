@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     "Google Ads Ireland",
     "Meta Ads Ireland",
     "website design Waterford",
-    "small business marketing Ireland",
+    "Irish business marketing",
     "SME marketing Ireland",
     "content creation Waterford",
     "Irish business marketing",

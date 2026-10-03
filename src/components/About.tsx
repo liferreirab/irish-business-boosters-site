@@ -22,8 +22,7 @@ export default function About() {
             <Reveal delay={0.1}>
               <p className="mt-7 max-w-xl text-lg leading-relaxed text-body">
                 Irish Business Boosters is a full-service digital marketing
-                agency built for small and medium-sized businesses across
-                Ireland. We&apos;re based in Waterford, and we understand the
+                agency built for businesses across Ireland. We&apos;re based in Waterford, and we understand the
                 local market — the challenges, the seasons, and what it
                 actually takes to grow here.
               </p>
@@ -68,8 +67,7 @@ export default function About() {
                     Our Mission
                   </h3>
                   <p className="mt-3 text-base leading-relaxed text-body">
-                    To empower small and medium-sized businesses in Ireland
-                    to grow online through accessible, strategic, and
+                    To empower Irish businesses to grow online through accessible, strategic, and
                     results-driven digital marketing.
                   </p>
                 </div>
