@@ -1,21 +1,9 @@
 import type { Metadata } from "next";
-import SimpleHeader from "@/components/SimpleHeader";
-import Footer from "@/components/Footer";
-import WorkWithUs from "@/components/offers/WorkWithUs";
+import Redirect from "@/components/Redirect";
 
-export const metadata: Metadata = {
-  title: "Work with us",
-  description: "Instagram Health Check, Full Business Diagnostic, Strategy Sessions, Coaching and monthly social media management for Irish businesses.",
-  alternates: { canonical: "https://irishbusinessboosters.com/work-with-us" },
-};
+// Old address (already shared in places): send people to /start.
+export const metadata: Metadata = { robots: { index: false, follow: true } };
 
-export default function WorkWithUsPage() {
-  return (
-    <>
-      <div className="grain-overlay" />
-      <SimpleHeader cta={{ href: "/start/healthcheck", label: "Health Check · €29" }} />
-      <WorkWithUs />
-      <Footer />
-    </>
-  );
+export default function OldWorkWithUs() {
+  return <Redirect to="/start" />;
 }

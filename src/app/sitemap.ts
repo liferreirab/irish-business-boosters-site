@@ -11,7 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
-      url: "https://irishbusinessboosters.com/work-with-us",
+      url: "https://irishbusinessboosters.com/start",
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.8,

@@ -28,7 +28,7 @@ const FAQ = [
   { q: "Will I be pushed into signing up for more?", a: "No. Every option stands on its own. No contracts, no hard sell. If you want more help, you'll know where to find us." },
 ];
 
-export default function WorkWithUs() {
+export default function OffersPage() {
   return (
     <main className="flex-1 overflow-x-clip">
       {/* Hero */}
@@ -39,7 +39,7 @@ export default function WorkWithUs() {
         <div className="relative mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-16 px-6 pb-24 pt-14 lg:grid-cols-2 lg:px-8 lg:pb-32 lg:pt-20">
           <div>
             <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="overline mb-5">
-              Work with us
+              Start here
             </motion.p>
             <motion.h1
               initial={{ opacity: 0, y: 24 }}

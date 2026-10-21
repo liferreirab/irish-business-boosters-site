@@ -1,4 +1,4 @@
-// Paid offers shown on /work-with-us and sold through /start/<slug>.
+// Paid offers shown on /start and sold through /start/<slug>.
 // Each request goes to the site-lead Edge Function (same as the contact form).
 
 // Stripe Payment Links. While a link is null the customer is told

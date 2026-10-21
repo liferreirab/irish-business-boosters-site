@@ -10,7 +10,7 @@ const SERVICE_LINKS = [
 ];
 
 const COMPANY_LINKS = [
-  { label: "Work With Us", href: "/work-with-us" },
+  { label: "Pricing", href: "/start" },
   { label: "About Us", href: "/#about" },
   { label: "Why Us", href: "/#why-us" },
   { label: "Contact", href: "/#contact" },

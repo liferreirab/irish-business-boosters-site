@@ -27,7 +27,7 @@ export default async function StartPage({ params }: { params: Promise<{ offer: s
   return (
     <>
       <div className="grain-overlay" />
-      <SimpleHeader back={{ href: "/work-with-us", label: "All options" }} />
+      <SimpleHeader back={{ href: "/start", label: "All options" }} />
       <main className="relative flex-1 overflow-x-clip">
         <div className="blob animate-float-slow -left-32 top-0 h-[24rem] w-[24rem] bg-coral/10" />
         <div className="blob animate-float-slower right-[-8rem] top-1/2 h-[22rem] w-[22rem] bg-teal/15" />
