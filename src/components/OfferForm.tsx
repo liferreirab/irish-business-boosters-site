@@ -35,6 +35,7 @@ export default function OfferForm({ offer }: { offer: Offer }) {
       const res = await fetch(LEAD_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(15000),
         body: JSON.stringify({
           name: get("name"),
           email: get("email"),
@@ -51,6 +52,12 @@ export default function OfferForm({ offer }: { offer: Offer }) {
       trackPixel("Lead", { content_name: `offer_${offer.slug}`, value: Number(offer.price.replace(/\D/g, "")), currency: "EUR" });
       setStep("done");
     } catch {
+      // Never block a sale on the CRM: Stripe still collects the email,
+      // and we follow up from there.
+      if (payLink) {
+        setStep("done");
+        return;
+      }
       setStep("form");
       setError("Sorry, something went wrong. Please try again or email hello@irishbusinessboosters.com.");
     }
