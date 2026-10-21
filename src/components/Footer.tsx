@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { TrendingUp } from "lucide-react";
 import InstagramIcon, { INSTAGRAM_URL, INSTAGRAM_HANDLE } from "./ui/InstagramIcon";
 
@@ -9,9 +10,10 @@ const SERVICE_LINKS = [
 ];
 
 const COMPANY_LINKS = [
-  { label: "About Us", href: "#about" },
-  { label: "Why Us", href: "#why-us" },
-  { label: "Contact", href: "#contact" },
+  { label: "Work With Us", href: "/work-with-us" },
+  { label: "About Us", href: "/#about" },
+  { label: "Why Us", href: "/#why-us" },
+  { label: "Contact", href: "/#contact" },
 ];
 
 export default function Footer() {
@@ -47,9 +49,9 @@ export default function Footer() {
             <ul className="space-y-3 text-sm text-body">
               {SERVICE_LINKS.map((s) => (
                 <li key={s}>
-                  <a href="#services" className="transition-colors hover:text-coral">
+                  <Link href="/#services" className="transition-colors hover:text-coral">
                     {s}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -60,9 +62,9 @@ export default function Footer() {
             <ul className="space-y-3 text-sm text-body">
               {COMPANY_LINKS.map((l) => (
                 <li key={l.label}>
-                  <a href={l.href} className="transition-colors hover:text-coral">
+                  <Link href={l.href} className="transition-colors hover:text-coral">
                     {l.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
               <li>
