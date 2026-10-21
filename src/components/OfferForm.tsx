@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useEffect, useRef, useState, FormEvent } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, CheckCircle2, Loader2, Lock } from "lucide-react";
+import { ArrowRight, CheckCircle2, Loader2, Lock, Ticket } from "lucide-react";
 import { trackPixel } from "@/lib/metaPixel";
-import { PAYMENT_LINKS, type Offer, type Question } from "@/lib/offers";
+import { CREDIT_CODES, PAYMENT_LINKS, type Offer, type Question } from "@/lib/offers";
 
 // Same Edge Function as the contact form: saves to the CRM and emails Eli.
 const LEAD_ENDPOINT = "https://tbgxeqauakiydzwmqyyf.supabase.co/functions/v1/site-lead";
@@ -15,6 +15,28 @@ export default function OfferForm({ offer }: { offer: Offer }) {
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
   const payLink = PAYMENT_LINKS[offer.slug];
+
+  // Came from a Health Check report? Show the code and pre-apply it at checkout.
+  const [promo, setPromo] = useState<string | null>(null);
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("code")?.toUpperCase();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads the URL once on a static page
+    if (code && code === CREDIT_CODES[offer.slug]) setPromo(code);
+  }, [offer.slug]);
+
+  // On phones the confirmation would appear above the fold: bring it into view.
+  const topRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (step === "done") topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [step]);
+
+  const checkoutUrl = () => {
+    if (!payLink) return null;
+    const q = new URLSearchParams();
+    if (email) q.set("prefilled_email", email);
+    if (promo) q.set("prefilled_promo_code", promo);
+    return q.size ? `${payLink}?${q}` : payLink;
+  };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -68,6 +90,8 @@ export default function OfferForm({ offer }: { offer: Offer }) {
       ? ["Pay securely below", offer.slug === "healthcheck" ? "We go through your profile" : "We email you to pick a time", offer.slug === "healthcheck" ? "Your report lands in your inbox" : "We get to work"]
       : [offer.slug === "healthcheck" ? "We email you a secure payment link" : "We email you within one working day", offer.slug === "healthcheck" ? "We go through your profile" : "We agree a time and payment", offer.slug === "healthcheck" ? "Your report lands in your inbox" : "We get to work"];
     return (
+      <>
+      <div ref={topRef} className="scroll-mt-24" />
       <motion.section
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
@@ -86,6 +110,7 @@ export default function OfferForm({ offer }: { offer: Offer }) {
           Thanks{firstName ? `, ${firstName}` : ""}! <span className="brand-accent">You&apos;re in.</span>
         </h2>
         <p className="mt-3 text-lg text-body">{offer.delivery}</p>
+        {promo && <PromoNote code={promo} />}
 
         <ol className="mt-8 space-y-4">
           {next.map((t, i) => (
@@ -98,7 +123,7 @@ export default function OfferForm({ offer }: { offer: Offer }) {
 
         {payLink ? (
           <a
-            href={email ? `${payLink}?prefilled_email=${encodeURIComponent(email)}` : payLink}
+            href={checkoutUrl()!}
             onClick={() => trackPixel("InitiateCheckout", { content_name: `offer_${offer.slug}` })}
             className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-coral px-7 py-4 font-semibold text-cream shadow-[0_8px_24px_-8px_rgba(216,90,48,0.55)] transition-colors hover:bg-coral-hover sm:w-auto"
           >
@@ -110,6 +135,7 @@ export default function OfferForm({ offer }: { offer: Offer }) {
           </p>
         )}
       </motion.section>
+      </>
     );
   }
 
@@ -118,6 +144,12 @@ export default function OfferForm({ offer }: { offer: Offer }) {
     <form onSubmit={handleSubmit} className="relative mt-10 rounded-[2rem] bg-white p-7 shadow-[0_24px_60px_-24px_rgba(44,44,42,0.3)] sm:p-10">
       {/* Honeypot: hidden from people, bots fill it in. */}
       <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 opacity-0" />
+
+      {promo && (
+        <div className="mb-8">
+          <PromoNote code={promo} />
+        </div>
+      )}
 
       <FormStep n={1} title="About your business">
         {business.map((q) => (
@@ -147,6 +179,22 @@ export default function OfferForm({ offer }: { offer: Offer }) {
         <Lock size={12} /> Your details are only used for this. No spam, ever.
       </p>
     </form>
+  );
+}
+
+function PromoNote({ code }: { code: string }) {
+  return (
+    <div className="mt-6 flex items-start gap-4 rounded-2xl border-2 border-dashed border-teal-deep/40 bg-teal/10 p-5">
+      <Ticket className="mt-0.5 shrink-0 text-teal-deep" size={22} />
+      <div>
+        <p className="font-semibold text-ink">Your Health Check credit: €29 off</p>
+        <p className="mt-1 text-sm text-body">
+          Your code{" "}
+          <span className="rounded-md bg-white px-2 py-0.5 font-mono font-bold tracking-wider text-ink">{code}</span>{" "}
+          is already added at checkout. If you don&apos;t see it, type it in the &ldquo;Add promotion code&rdquo; box.
+        </p>
+      </div>
+    </div>
   );
 }
 

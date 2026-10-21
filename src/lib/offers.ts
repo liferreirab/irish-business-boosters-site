@@ -10,6 +10,10 @@ export const PAYMENT_LINKS: Record<string, string | null> = {
   coaching: "https://buy.stripe.com/8x228q7g9ew5d61gUOefC03",
 };
 
+// Stripe promotion code printed in every Health Check report (€29 off the
+// Full Business Diagnostic). Reports link to /start/diagnostic?code=<this>.
+export const CREDIT_CODES: Record<string, string> = { diagnostic: "HEALTHCHECK29" };
+
 export type Question =
   | { kind: "text"; name: string; label: string; required?: boolean; placeholder?: string; type?: string; autoComplete?: string }
   | { kind: "textarea"; name: string; label: string; required?: boolean; placeholder?: string }
