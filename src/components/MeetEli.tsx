@@ -32,11 +32,11 @@ export default function MeetEli() {
                   <img
                     src={`${BASE_PATH}/eli.jpg`}
                     alt="Eli, founder of Irish Business Boosters"
-                    width={664}
-                    height={885}
+                    width={960}
+                    height={1440}
                     loading="lazy"
                     className="h-auto w-full object-cover"
-                    style={{ aspectRatio: "3/4" }}
+                    style={{ aspectRatio: "2/3" }}
                   />
                 </div>
               </div>
