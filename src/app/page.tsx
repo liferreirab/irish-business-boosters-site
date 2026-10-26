@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import About from "@/components/About";
+import MeetEli from "@/components/MeetEli";
 import WhyUs from "@/components/WhyUs";
 import Services from "@/components/Services";
 import Results from "@/components/Results";
@@ -90,6 +91,7 @@ export default function Home() {
       <main>
         <Hero />
         <About />
+        <MeetEli />
         <WhyUs />
         <Services />
         <Results />
