@@ -91,7 +91,8 @@ section.alt{background:var(--paper-2)}
 
 /* audiences */
 .aud{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
-.aud article{display:flex;flex-direction:column;gap:14px;border-top:2px solid var(--ink);padding-top:16px}
+.aud article{display:flex;flex-direction:column;gap:14px;background:var(--paper);border:1px solid var(--rule);border-top:3px solid var(--oak);border-radius:8px;padding:22px 22px 24px;box-shadow:0 10px 30px -22px rgba(0,0,0,.35)}
+.aud .vn{font:500 11.5px/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--oak-ink)}
 .aud .q{font-family:var(--f-head);font-size:18px;line-height:1.4}
 .aud dl{margin:0;display:grid;grid-template-columns:92px 1fr;gap:8px 12px;font-size:14.5px}
 .aud dt{font-family:var(--f-mono);font-size:11.5px;color:var(--ink-2);padding-top:2px;text-transform:uppercase;letter-spacing:.05em}
@@ -134,6 +135,10 @@ section.alt{background:var(--paper-2)}
 .note b{display:block;font-weight:600;font-size:15px}
 .note p{font-size:14px;color:var(--ink-2)}
 .browser{border:1px solid var(--rule);background:var(--s-bg);box-shadow:0 18px 50px -24px rgba(0,0,0,.35);container-type:inline-size;overflow:hidden}
+@supports (overflow:clip){.browser{overflow:clip}}
+.s-float{position:sticky;bottom:22px;height:0;z-index:8;display:flex;justify-content:flex-end;align-items:flex-end;padding-right:2.4%;pointer-events:none}
+.s-float .s-btn{flex:none;font-size:14px;padding:.85em 1.5em;border-radius:999px;box-shadow:0 10px 24px -8px rgba(0,0,0,.45);pointer-events:auto;position:relative}
+.s-float .tag{left:-10px;top:-10px}
 .bbar{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#ece9e4;border-bottom:1px solid #dcd7cf}
 .bbar i{width:10px;height:10px;border-radius:50%;background:#cfc9bf;display:block}
 .bbar span{margin-left:10px;flex:1;background:#fff;border-radius:4px;padding:3px 10px;font:12px var(--f-mono);color:#6b665e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -496,6 +501,7 @@ html{scroll-behavior:smooth}
     </div>
     <div class="aud">
       <article>
+        <span class="vn">Visitor 1 of 3</span>
         <span class="kicker">Homeowner · anywhere in Ireland</span>
         <h3>Renovating a kitchen or furnishing a new home</h3>
         <p class="q">"Have they made something like what I want? Is it worth the price?"</p>
@@ -506,6 +512,7 @@ html{scroll-behavior:smooth}
         </dl>
       </article>
       <article>
+        <span class="vn">Visitor 2 of 3</span>
         <span class="kicker">Hotel, office, developer</span>
         <h3>Looking for a reliable partner for a commercial job</h3>
         <p class="q">"Have they handled projects our size? Do they deliver on time?"</p>
@@ -516,6 +523,7 @@ html{scroll-behavior:smooth}
         </dl>
       </article>
       <article>
+        <span class="vn">Visitor 3 of 3</span>
         <span class="kicker">Kitchen designer, architect</span>
         <h3>Looking for a workshop to build their designs</h3>
         <p class="q">"Is the finish good enough for my clients?"</p>
@@ -695,7 +703,7 @@ html{scroll-behavior:smooth}
           </div>
           <div class="s-quote">
             <blockquote>"Sean made the process stress-free and straightforward from the design of the kitchen to the finishing touches."<cite>Rory &amp; Clara, Dunmore East</cite></blockquote>
-            <div class="s-g"><span class="stars">★★★★★</span><b>Google reviews</b><small>Live from the Google Business profile</small></div>
+            <div class="s-g"><span class="stars">★★★★★</span><b>Your Google reviews</b><small>Shown live from your Google profile</small></div>
             <span class="tag" style="left:1.5%;top:8%">9</span>
           </div>
           <div class="s-cta s-pad">
@@ -709,6 +717,7 @@ html{scroll-behavior:smooth}
             <div><b>Talk to us</b><p>087 228 6859<br>051 307 976</p></div>
             <div><b>Follow</b><p>Instagram · Facebook · LinkedIn</p></div>
           </div>
+          <div class="s-float"><a class="s-btn" href="#quote">Get a quote<span class="tag">11</span></a></div>
         </div>
       </div>
       <aside class="notes" aria-label="Home page notes">
@@ -720,8 +729,9 @@ html{scroll-behavior:smooth}
         <div class="note"><span class="n">6</span><div><b>A commercial section in graphite</b><p>The names that win bigger contracts. We'll need each client's permission to name them.</p></div></div>
         <div class="note"><span class="n">7</span><div><b>The process in 4 steps</b><p>It answers "how does this start?". Seeing a 3D design before production is a strong selling point.</p></div></div>
         <div class="note"><span class="n">8</span><div><b>Your story as proof</b><p>Told in the company's voice ("Our founder…"), so the focus stays on the work.</p></div></div>
-        <div class="note"><span class="n">9</span><div><b>A testimonial plus live Google reviews</b><p>The widget fills itself as the review campaign brings in new reviews.</p></div></div>
+        <div class="note"><span class="n">9</span><div><b>A testimonial plus your Google reviews</b><p>These are your real reviews, shown live from your Google Business profile: the ones already there, and the new ones we'll ask your clients to leave. Each new review appears on the site by itself.</p></div></div>
         <div class="note"><span class="n">10</span><div><b>A closing call to action and one address</b><p>Unit 7 &amp; 8 everywhere: website, Google, email signature, brochures.</p></div></div>
+        <div class="note"><span class="n">11</span><div><b>A floating "Get a quote" button</b><p>It follows the visitor down every page, on desktop and on phones, so asking for a quote is always one click away. Scroll the design to see it move.</p></div></div>
       </aside>
     </div>
   </div>
