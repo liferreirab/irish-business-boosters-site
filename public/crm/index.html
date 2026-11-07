@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://tbgxeqauakiydzwmqyyf.supabase.co wss://tbgxeqauakiydzwmqyyf.supabase.co; base-uri 'none'; form-action 'none'">
+<title>IBB CRM</title>
+<link rel="stylesheet" href="crm.css">
+</head>
+<body>
+<div id="auth" class="auth" hidden></div>
+<div id="app" hidden>
+  <header class="top">
+    <div class="brand">IBB <span>CRM</span></div>
+    <nav id="tabs">
+      <button data-tab="overview" class="on">Visão geral</button>
+      <button data-tab="finance">Financeiro</button>
+      <button data-tab="clients">Clientes</button>
+      <button data-tab="invoices">Invoices</button>
+      <button data-tab="leads">Leads</button>
+    </nav>
+    <button id="logout" class="ghost">Sair</button>
+  </header>
+  <main id="view"></main>
+</div>
+<div id="modal" class="modal" hidden></div>
+<div id="toast" class="toast" hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
+<script src="crm.js"></script>
+</body>
+</html>
