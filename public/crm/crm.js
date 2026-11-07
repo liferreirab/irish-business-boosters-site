@@ -60,12 +60,12 @@ const daysBetween = (a, b) => Math.round((new Date(b + "T12:00:00") - new Date(a
 const sum = (arr, f = (x) => x) => arr.reduce((a, x) => a + (+f(x) || 0), 0);
 const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
 
-function toast(msg) {
-  const t = $("#toast"); t.textContent = msg; t.hidden = false;
-  clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 3200);
+function toast(msg, action) {
+  const t = $("#toast"); t.innerHTML = `<span>${esc(msg)}</span>${action ? `<button class="small ghost" id="toast-act" style="margin-left:12px">${esc(action[0])}</button>` : ""}`; t.hidden = false;
+  if (action) $("#toast-act").onclick = () => { t.hidden = true; action[1](); };
+  clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), action ? 7000 : 3200);
 }
 
-// theme (dark by default)
 function applyTheme() {
   const light = store.get("crm-theme") === "light";
   document.documentElement.dataset.theme = light ? "light" : "dark";
@@ -156,6 +156,12 @@ async function showEnroll(allFactors) {
   });
 }
 
+addEventListener("keydown", (e) => {
+  if (e.target.closest("input, textarea, select") || e.metaKey || e.ctrlKey || e.altKey || !$("#modal").hidden || $("#app").hidden) return;
+  if (e.key === "/" && $("#f-q")) { e.preventDefault(); $("#f-q").focus(); }
+  if (e.key.toLowerCase() === "n") { e.preventDefault(); ({ finance: () => txForm({ entity: S.fin.entity }), invoices: () => invoiceForm(), clients: () => clientForm() })[S.tab]?.(); }
+});
+
 let idleTimer;
 function bumpIdle() {
   clearTimeout(idleTimer);
@@ -165,7 +171,7 @@ function bumpIdle() {
 
 // ── data ─────────────────────────────────────────────────────────────────────
 const S = {
-  tab: "overview", ent: store.get("crm-ent") || "ALL", fx: null, fxDate: null, email: "",
+  tab: "overview", clientId: null, brClient: null, ent: store.get("crm-ent") || "ALL", fx: null, fxDate: null, email: "",
   fin: { entity: "BR", year: String(new Date().getFullYear()), nature: "", q: "", card: false },
 };
 
@@ -246,13 +252,13 @@ function renderNav() {
   $("#tabs").innerHTML = TABS.map(([k, l, i]) => `<button data-tab="${k}" class="${S.tab === k ? "on" : ""}">${ic(i)}${l}${counts[k] ? `<span class="count">${counts[k]}</span>` : ""}</button>`).join("");
   $("#bottomnav").innerHTML = TABS.map(([k, l, i]) => `<button data-tab="${k}" class="${S.tab === k ? "on" : ""}">${ic(i)}${l}</button>`).join("");
 }
-const go = (tab) => { S.tab = tab; render(); scrollTo({ top: 0 }); };
+const go = (tab, extra = {}) => { S.tab = tab; S.clientId = extra.clientId || null; S.brClient = extra.brClient || null; render(); try { scrollTo({ top: 0 }); } catch {} };
 document.addEventListener("click", (e) => { const b = e.target.closest("[data-tab]"); if (b) go(b.dataset.tab); });
 $("#theme").onclick = () => { store.set("crm-theme", store.get("crm-theme") === "light" ? "dark" : "light"); applyTheme(); render(); };
 $("#logout").innerHTML = `${ic("out")} Sair`;
 $("#logout").onclick = async () => { await sb.auth.signOut(); location.reload(); };
 
-function render() { applyTheme(); renderNav(); ({ overview, finance, clients, invoices, leads })[S.tab](); countUp(); }
+function render() { applyTheme(); renderNav(); (S.tab === "clients" && (S.clientId || S.brClient) ? clientDetail : ({ overview, finance, clients, invoices, leads })[S.tab])(); countUp(); }
 
 function topbar(title, sub = "", right = "") {
   return `<div class="topbar"><div><h1>${title}</h1>${sub ? `<div class="sub">${sub}</div>` : ""}</div><div class="spacer"></div>${right}</div>`;
@@ -387,7 +393,7 @@ function todoItems() {
     if (d < 0 || d > 60) continue;
     const c = clientById(k.client_id), notice = k.notice_days ? addDays(k.renewal_date, -k.notice_days) : null;
     items.push({ tone: "blue", icon: "repeat", title: `Renovação: ${c?.company} em ${d} dias`,
-      sub: `fim do período mínimo ${fdate(k.renewal_date)}${notice ? ` · aviso até ${fdate(notice)}` : ""}`, action: ["Ver cliente", () => go("clients")] });
+      sub: `fim do período mínimo ${fdate(k.renewal_date)}${notice ? ` · aviso até ${fdate(notice)}` : ""}`, action: ["Ver cliente", () => go("clients", { clientId: k.client_id })] });
   }
   const flagged = S.transactions.filter((x) => x.flag).length;
   if (flagged) items.push({ tone: "amber", icon: "flag", title: `${flagged} lançamento${flagged > 1 ? "s" : ""} para conferir`, sub: "marcados na importação ou por você",
@@ -516,6 +522,9 @@ function form({ title, fields, values = {}, onSave, onDelete, deleteLabel = "Apa
 }
 
 // ── finance ──────────────────────────────────────────────────────────────────
+const TYPE_CHIPS = [["", "Tudo"], ["receita", "Receitas"], ["despesa", "Despesas"], ["fatura_cartao", "Faturas"], ["imposto", "Impostos"], ["pro_labore", "Pró-labore"], ["transferencia", "Investimentos"], ["flag", "⚑ Conferir"]];
+const GENERIC_NOTE = /^classificado a partir do extrato$/;
+
 function finance() {
   const F = S.fin;
   const years = [...new Set([String(new Date().getFullYear()), ...S.transactions.filter((t) => t.entity === F.entity).map((t) => t.date.slice(0, 4))])].sort().reverse();
@@ -532,16 +541,20 @@ function finance() {
   inYear.filter((t) => t.nature === "despesa" || (F.card && t.nature === "detalhe_cartao")).forEach((t) => { const k = t.category || "Outros"; byCat[k] = (byCat[k] || 0) + +t.amount; });
   const top = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, 8);
   const barList = (o) => { const t = top(o), mx = Math.max(1, ...t.map((x) => x[1])); return t.map(([k, v], n) => `<div class="r"><div class="top"><span>${esc(k)}</span><b>${money(v, cur, 0)}</b></div><div class="bar"><i style="width:${(v / mx) * 100}%;animation-delay:${n * 60}ms"></i></div></div>`).join(""); };
+  const counted = (t) => t.nature !== "detalhe_cartao";
+  const groups = [];
+  for (const t of rows) { const k = t.date.slice(0, 7); if (!groups.length || groups.at(-1).k !== k) groups.push({ k, items: [] }); groups.at(-1).items.push(t); }
+  const shown = groups.slice(0, F.months || 6);
 
   $("#view").innerHTML = `
     ${topbar("Financeiro", `${ENTITY[F.entity]} · ${F.year === "all" ? "todos os anos" : F.year}`, `<button class="primary" id="new-tx">${ic("plus")} Lançamento</button>`)}
     <div class="toolbar">
-      <div><label>Empresa</label><div class="seg" id="f-entity">${Object.entries(ENTITY).map(([k, l]) => `<button data-v="${k}" class="${F.entity === k ? "on" : ""}">${l}</button>`).join("")}</div></div>
-      <div><label>Ano</label><select id="f-year">${years.map((y) => `<option ${F.year === y ? "selected" : ""}>${y}</option>`).join("")}<option value="all" ${F.year === "all" ? "selected" : ""}>Todos</option></select></div>
-      <div><label>Tipo</label><select id="f-nature"><option value="">Todos</option><option value="flag" ${F.nature === "flag" ? "selected" : ""}>⚑ Para conferir</option>${Object.entries(NATURES).map(([k, l]) => `<option value="${k}" ${F.nature === k ? "selected" : ""}>${l}</option>`).join("")}</select></div>
-      <div class="grow"><label>Buscar</label><input id="f-q" value="${esc(F.q)}" placeholder="cliente, descrição…"></div>
-      <div><label>&nbsp;</label><label style="display:flex;gap:8px;align-items:center;color:var(--body);text-transform:none;font-family:var(--sans);font-size:13px;letter-spacing:0;padding:10px 0"><input type="checkbox" id="f-card" style="width:auto" ${F.card ? "checked" : ""}> itens do cartão</label></div>
+      <div class="seg" id="f-entity">${Object.entries(ENTITY).map(([k, l]) => `<button data-v="${k}" class="${F.entity === k ? "on" : ""}">${l}</button>`).join("")}</div>
+      <div class="seg" id="f-year">${years.map((y) => `<button data-v="${y}" class="${F.year === y ? "on" : ""}">${y}</button>`).join("")}<button data-v="all" class="${F.year === "all" ? "on" : ""}">Todos</button></div>
+      <div class="grow"><input id="f-q" value="${esc(F.q)}" placeholder="Buscar cliente, descrição…  ( / )"></div>
     </div>
+    <div class="chips" id="f-nature">${TYPE_CHIPS.map(([k, l]) => `<button data-v="${k}" class="chip ${F.nature === k ? "on" : ""}">${l}${k === "flag" ? ` <span class="mono">${inYear.filter((t) => t.flag).length}</span>` : ""}</button>`).join("")}
+      <label class="chip toggle"><input type="checkbox" id="f-card" ${F.card ? "checked" : ""}> itens do cartão</label></div>
     <div class="kpis">
       <div class="panel kpi accent"><div class="k">Receita</div><div class="v" data-count="${receita}" data-cur="${cur}">${short(receita, cur)}</div><div class="s">já descontadas devoluções</div></div>
       <div class="panel kpi"><div class="k">Despesas</div><div class="v" data-count="${gastos}" data-cur="${cur}">${short(gastos, cur)}</div><div class="s">${F.entity === "BR" ? "inclui faturas do cartão" : "&nbsp;"}</div></div>
@@ -551,26 +564,35 @@ function finance() {
     </div>
     <div class="section split">
       <div class="panel pad"><div class="ph"><h2>Receita por cliente</h2></div><div class="blist in">${barList(byClient) || `<div class="empty">Nada no período</div>`}</div></div>
-      <div class="panel pad"><div class="ph"><h2>Despesas por categoria</h2></div><div class="blist out">${barList(byCat) || `<div class="empty">${F.entity === "BR" && !F.card ? "Quase tudo passa pelo cartão: marque “itens do cartão”" : "Nada no período"}</div>`}</div></div>
+      <div class="panel pad"><div class="ph"><h2>Despesas por categoria</h2></div><div class="blist out">${barList(byCat) || `<div class="empty">${F.entity === "BR" && !F.card ? "Quase tudo passa pelo cartão: ative “itens do cartão”" : "Nada no período"}</div>`}</div></div>
     </div>
-    <div class="section panel"><div class="ph" style="padding:16px 18px 0"><h2>Lançamentos <span class="sub">(${rows.length})</span></h2></div>
-    <div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Conta</th><th class="num">Valor</th></tr></thead><tbody>
-      ${rows.map((t) => `<tr class="click ${t.flag ? "flagged" : ""} ${t.nature === "detalhe_cartao" ? "muted" : ""}" data-id="${t.id}">
-        <td class="nowrap mono sub">${fdate(t.date)}</td>
-        <td><span style="color:var(--ink)">${esc(t.description)}</span>${t.flag ? `<span class="flag-tag">⚑ conferir</span>` : ""}<div class="sub">${esc([t.category, t.notes].filter(Boolean).join(" · "))}</div></td>
-        <td><span class="badge ${t.nature}">${esc(NATURES[t.nature])}</span></td>
-        <td class="nowrap sub">${esc(accountById(t.account_id)?.name)}</td>
-        <td class="num mono ${t.type === "in" ? "pos" : "neg"}">${t.type === "in" ? "+" : "−"} ${money(t.amount, t.currency)}</td></tr>`).join("") || `<tr><td colspan="5" class="empty">Nenhum lançamento</td></tr>`}
-    </tbody></table></div></div>`;
+    <div class="section"><div class="ph"><h2>Lançamentos <span class="sub">(${rows.length})</span></h2><span class="hint">N = novo · / = buscar</span></div>
+    ${shown.map((g) => {
+      const inc = sum(g.items.filter((t) => counted(t) && t.type === "in"), (t) => t.amount), out = sum(g.items.filter((t) => counted(t) && t.type === "out"), (t) => t.amount);
+      return `<div class="month panel">
+        <div class="mh"><h3>${MONTHS_FULL[+g.k.slice(5) - 1]} <span class="serif">${g.k.slice(0, 4)}</span></h3>
+          <div class="mt"><span class="pos">+${money(inc, cur, 0)}</span><span>−${money(out, cur, 0)}</span><b class="${inc - out >= 0 ? "pos" : ""}">${inc - out >= 0 ? "+" : "−"}${money(Math.abs(inc - out), cur, 0)}</b></div></div>
+        ${g.items.map((t) => `<div class="tx click ${t.flag ? "flagged" : ""} ${t.nature === "detalhe_cartao" ? "muted" : ""}" data-id="${t.id}">
+          <span class="dd mono">${t.date.slice(8)}</span>
+          <span class="dotc" style="background:${t.type === "in" ? "var(--teal)" : "var(--coral-2)"}"></span>
+          <div class="t"><b>${esc(t.description)}${t.flag ? `<span class="flag-tag">⚑ conferir</span>` : ""}</b><span>${esc([t.category, !GENERIC_NOTE.test(t.notes || "") && t.notes].filter(Boolean).join(" · "))}</span></div>
+          <span class="badge ${t.nature}">${esc(NATURES[t.nature])}</span>
+          <span class="a mono ${t.type === "in" ? "pos" : ""}">${t.type === "in" ? "+" : "−"} ${money(t.amount, t.currency)}</span></div>`).join("")}
+      </div>`;
+    }).join("") || `<div class="panel empty">Nenhum lançamento</div>`}
+    ${groups.length > shown.length ? `<div style="text-align:center;margin-top:14px"><button class="ghost" id="more">Mostrar mais meses (${groups.length - shown.length})</button></div>` : ""}
+    </div>
+    <button class="fab primary" id="fab" aria-label="Novo lançamento">${ic("plus")}</button>`;
 
-  const upd = (k, v) => { F[k] = v; finance(); countUp(); };
-  $$("#f-entity [data-v]").forEach((b) => (b.onclick = () => { F.entity = b.dataset.v; F.year = String(new Date().getFullYear()); finance(); countUp(); }));
-  $("#f-year").onchange = (e) => upd("year", e.target.value);
-  $("#f-nature").onchange = (e) => upd("nature", e.target.value);
+  const upd = (k, v) => { F[k] = v; F.months = 6; finance(); countUp(); };
+  $$("#f-entity [data-v]").forEach((b) => (b.onclick = () => { F.entity = b.dataset.v; F.year = String(new Date().getFullYear()); F.months = 6; finance(); countUp(); }));
+  $$("#f-year [data-v]").forEach((b) => (b.onclick = () => upd("year", b.dataset.v)));
+  $$("#f-nature [data-v]").forEach((b) => (b.onclick = () => upd("nature", b.dataset.v)));
   $("#f-card").onchange = (e) => upd("card", e.target.checked);
-  let deb; $("#f-q").oninput = (e) => { clearTimeout(deb); deb = setTimeout(() => { upd("q", e.target.value); const i = $("#f-q"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 300); };
-  $("#new-tx").onclick = () => txForm({ entity: F.entity });
-  $$("tr[data-id]").forEach((tr) => (tr.onclick = () => txForm(S.transactions.find((t) => t.id === tr.dataset.id))));
+  if ($("#more")) $("#more").onclick = () => { F.months = (F.months || 6) + 6; finance(); };
+  let deb; $("#f-q").oninput = (e) => { clearTimeout(deb); deb = setTimeout(() => { F.q = e.target.value; finance(); const i = $("#f-q"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 300); };
+  $("#new-tx").onclick = $("#fab").onclick = () => txForm({ entity: F.entity });
+  $$(".tx[data-id]").forEach((el) => (el.onclick = () => txForm(S.transactions.find((t) => t.id === el.dataset.id))));
 }
 
 function txForm(t = {}) {
@@ -603,40 +625,135 @@ function txForm(t = {}) {
       await save("transactions", row, t.id);
       await refresh(t.id ? "Lançamento atualizado" : "Lançamento criado");
     },
-    onDelete: t.id ? async () => { await remove("transactions", t.id); await refresh("Lançamento apagado"); } : null,
+    onDelete: t.id ? async () => {
+      await remove("transactions", t.id); await refresh();
+      const back = Object.fromEntries(Object.entries(t).filter(([k]) => !["created_at", "updated_at"].includes(k)));
+      toast("Lançamento apagado", ["Desfazer", async () => { await save("transactions", back); await refresh("Lançamento restaurado"); }]);
+    } : null,
   });
 }
 
 // ── clients & contracts ──────────────────────────────────────────────────────
+function brazilClients() {
+  const known = new Set(S.clients.map((c) => c.company.toLowerCase()));
+  const map = {};
+  for (const t of S.transactions.filter((x) => x.entity === "BR" && x.nature === "receita" && x.client_name)) {
+    const k = t.client_name.trim();
+    (map[k] ||= { name: k, total: 0, n: 0, first: t.date, last: t.date });
+    const m = map[k]; m.total += +t.amount; m.n++; if (t.date < m.first) m.first = t.date; if (t.date > m.last) m.last = t.date;
+  }
+  return Object.values(map).filter((m) => !known.has(m.name.toLowerCase())).sort((a, b) => b.last.localeCompare(a.last));
+}
+
+function contractProgress(k) {
+  const months = S.invoices.filter((i) => i.contract_id === k.id && /month/i.test(i.description) && i.status !== "cancelled").length;
+  const pct = k.min_months ? Math.min(100, (months / k.min_months) * 100) : 100;
+  const left = k.renewal_date ? daysBetween(today(), k.renewal_date) : null;
+  return { months, pct, left };
+}
+
 function clients() {
   const order = { active: 0, prospect: 1, paused: 2, ended: 3 };
   const list = [...S.clients].sort((a, b) => order[a.status] - order[b.status] || a.company.localeCompare(b.company));
-  $("#view").innerHTML = `${topbar("Clientes", `${list.filter((c) => c.status === "active").length} ativo(s)`, `<button class="primary" id="new-client">${ic("plus")} Cliente</button>`)}
-    ${list.map((c) => {
-      const ks = contractsOf(c.id);
+  const br = brazilClients(), y = String(new Date().getFullYear()), lastY = String(+y - 1);
+  $("#view").innerHTML = `${topbar("Clientes", `${list.filter((c) => c.status === "active").length} ativo(s) com contrato`, `<button class="primary" id="new-client">${ic("plus")} Cliente</button>`)}
+    <div class="ccards">${list.map((c) => {
+      const k = contractsOf(c.id).find((x) => x.status === "active" || x.status === "notice") || contractsOf(c.id)[0];
       const inv = S.invoices.filter((i) => i.client_id === c.id && i.status !== "cancelled");
-      return `<div class="panel client"><div class="head">
-        <div><h3>${esc(c.company)} <span class="badge ${c.status}">${esc(CLIENT_STATUS[c.status])}</span> <span class="badge">${ENTITY[c.entity]}</span></h3>
-          <div class="sub" style="margin-top:4px">${esc([c.contact_name, c.email, c.phone].filter(Boolean).join(" · "))}</div></div>
-        <div class="actions"><button class="small ghost" data-edit-client="${c.id}">Editar</button><button class="small ghost" data-new-contract="${c.id}">+ Contrato</button><button class="small primary" data-new-invoice="${c.id}">+ Invoice</button></div></div>
-        ${ks.map((k) => `<div class="facts">
-          <div><span>Contrato</span><b style="font-family:var(--sans)">${esc(k.title)}</b> <span class="badge ${k.status}">${esc(CONTRACT_STATUS[k.status])}</span></div>
-          <div><span>Mensal</span><b>${money(k.monthly_fee, k.currency)}</b><span>${esc(VAT_MODE[k.vat_mode])}</span></div>
-          ${+k.setup_fee ? `<div><span>Setup</span><b>${money(k.setup_fee, k.currency)}</b></div>` : ""}
-          <div><span>Início</span><b>${fdate(k.start_date)}</b></div>
-          <div><span>Fim do período mínimo</span><b>${fdate(k.renewal_date) || "—"}</b>${k.notice_days ? `<span>aviso de ${k.notice_days} dias</span>` : ""}</div>
-          <div><span>&nbsp;</span><button class="small ghost" data-edit-contract="${k.id}">Editar contrato</button></div>
-        </div>`).join("")}
-        <div class="facts"><div><span>Recebido</span><b class="pos">${money(sum(inv.filter((i) => i.status === "paid"), (i) => i.amount), ks[0]?.currency || "EUR")}</b></div>
-          <div><span>Em aberto</span><b>${money(sum(inv.filter((i) => i.status === "sent"), (i) => i.amount), ks[0]?.currency || "EUR")}</b></div>
-          ${c.notes ? `<div style="grid-column:span 3"><span>Notas</span><div>${esc(c.notes)}</div></div>` : ""}</div>
+      const p = k ? contractProgress(k) : null, cur = k?.currency || (c.entity === "BR" ? "BRL" : "EUR");
+      const late = inv.filter((i) => invoiceState(i) === "late").length;
+      return `<div class="panel ccard click" data-client="${c.id}">
+        <div class="ctop"><div class="avatar">${esc(c.company.slice(0, 1))}</div><div style="min-width:0"><h3>${esc(c.company)}</h3><div class="sub">${esc(c.contact_name || "")}</div></div>
+          <span class="badge ${c.status}" style="margin-left:auto">${esc(CLIENT_STATUS[c.status])}</span></div>
+        ${k ? `<div class="cnum"><span class="mono">${money(k.monthly_fee, k.currency, 0)}</span><small>/mês</small></div>
+          <div class="meter coral"><i style="width:${p.pct}%"></i></div>
+          <div class="sub" style="display:flex;justify-content:space-between;margin-top:6px"><span>${k.min_months ? `mês ${p.months} de ${k.min_months}` : esc(k.title)}</span><span>${p.left !== null ? (p.left >= 0 ? `renova em ${p.left} dias` : "mês a mês") : ""}</span></div>` : `<div class="sub" style="margin-top:14px">Sem contrato</div>`}
+        <div class="cfoot"><span>Recebido <b class="mono pos">${money(sum(inv.filter((i) => i.status === "paid"), (i) => i.amount), cur, 0)}</b></span>
+          <span>Em aberto <b class="mono">${money(sum(inv.filter((i) => i.status === "sent"), (i) => i.amount), cur, 0)}</b>${late ? ` <span class="flag-tag" style="background:var(--red-soft);color:var(--red)">${late} atrasado</span>` : ""}</span></div>
       </div>`;
-    }).join("") || `<p class="empty">Nenhum cliente ainda</p>`}`;
+    }).join("") || `<div class="panel empty">Nenhum cliente cadastrado</div>`}</div>
+    ${br.length ? `<div class="section"><div class="ph"><h2>Clientes do Brasil <span class="sub">pelos lançamentos</span></h2><span class="hint">${br.length}</span></div>
+      <div class="panel"><div class="tbl-wrap"><table><thead><tr><th>Cliente</th><th class="num">${y}</th><th class="num">${lastY}</th><th class="num">Total</th><th>Último pagamento</th></tr></thead><tbody>
+      ${br.map((m) => {
+        const ts = S.transactions.filter((t) => t.entity === "BR" && t.nature === "receita" && t.client_name?.trim() === m.name);
+        const yv = sum(ts.filter((t) => t.date.startsWith(y)), (t) => t.amount), lv = sum(ts.filter((t) => t.date.startsWith(lastY)), (t) => t.amount);
+        const recent = daysBetween(m.last, today()) < 60;
+        return `<tr class="click" data-br="${esc(m.name)}"><td><span style="color:var(--ink)">${esc(m.name)}</span>${recent ? ` <span class="badge active">Ativo</span>` : ""}<div class="sub">${m.n} pagamento(s) desde ${fdate(m.first)}</div></td>
+          <td class="num mono">${yv ? money(yv, "BRL", 0) : "—"}</td><td class="num mono">${lv ? money(lv, "BRL", 0) : "—"}</td>
+          <td class="num mono" style="color:var(--ink)">${money(m.total, "BRL", 0)}</td><td class="mono sub nowrap">${fdate(m.last)}</td></tr>`;
+      }).join("")}</tbody></table></div></div></div>` : ""}`;
   $("#new-client").onclick = () => clientForm();
-  $$("[data-edit-client]").forEach((b) => (b.onclick = () => clientForm(clientById(b.dataset.editClient))));
-  $$("[data-new-contract]").forEach((b) => (b.onclick = () => contractForm({ client_id: b.dataset.newContract })));
-  $$("[data-edit-contract]").forEach((b) => (b.onclick = () => contractForm(S.contracts.find((k) => k.id === b.dataset.editContract))));
-  $$("[data-new-invoice]").forEach((b) => (b.onclick = () => invoiceForm({ client_id: b.dataset.newInvoice }, true)));
+  $$("[data-client]").forEach((el) => (el.onclick = () => go("clients", { clientId: el.dataset.client })));
+  $$("[data-br]").forEach((el) => (el.onclick = () => go("clients", { brClient: el.dataset.br })));
+}
+
+function clientDetail() {
+  const t = today();
+  if (S.brClient) {
+    const name = S.brClient, ts = S.transactions.filter((x) => x.entity === "BR" && x.client_name?.trim() === name && (x.nature === "receita" || x.nature === "estorno"));
+    const total = sum(ts.filter((x) => x.nature === "receita"), (x) => x.amount) - sum(ts.filter((x) => x.nature === "estorno"), (x) => x.amount);
+    const years = {}; ts.forEach((x) => { const y = x.date.slice(0, 4); years[y] = (years[y] || 0) + (x.nature === "receita" ? +x.amount : -x.amount); });
+    $("#view").innerHTML = `${topbar(`<button class="ghost small" id="back">← Clientes</button> <span style="margin-left:10px">${esc(name)}</span>`, "Cliente do Brasil, a partir dos lançamentos", `<button class="ghost" id="register">Cadastrar como cliente</button>`)}
+      <div class="kpis">
+        <div class="panel kpi accent"><div class="k">Total recebido</div><div class="v" data-count="${total}" data-cur="BRL">${short(total, "BRL")}</div><div class="s">${ts.length} lançamento(s)</div></div>
+        ${Object.entries(years).sort().reverse().slice(0, 4).map(([y, v]) => `<div class="panel kpi"><div class="k">${y}</div><div class="v" data-count="${v}" data-cur="BRL">${short(v, "BRL")}</div></div>`).join("")}
+      </div>
+      <div class="section panel pad"><div class="ph"><h2>Pagamentos</h2></div><div class="timeline">${ts.map((x) => `<div class="ev"><span class="evdot ${x.nature === "receita" ? "teal" : "red"}"></span>
+        <div class="t"><b>${esc(x.description)}</b><span>${fdate(x.date)} · ${esc(NATURES[x.nature])}</span></div><span class="a mono ${x.nature === "receita" ? "pos" : ""}">${x.nature === "receita" ? "+" : "−"}${money(x.amount, "BRL")}</span></div>`).join("")}</div></div>`;
+    $("#back").onclick = () => go("clients");
+    $("#register").onclick = () => clientForm({ company: name, entity: "BR", status: "active" }, async (saved) => { S.brClient = null; S.clientId = saved.id; });
+    return;
+  }
+  const c = clientById(S.clientId);
+  if (!c) return go("clients");
+  const ks = contractsOf(c.id), k = ks.find((x) => x.status === "active" || x.status === "notice") || ks[0];
+  const inv = S.invoices.filter((i) => i.client_id === c.id && i.status !== "cancelled");
+  const cur = k?.currency || (c.entity === "BR" ? "BRL" : "EUR");
+  const paid = sum(inv.filter((i) => i.status === "paid"), (i) => i.amount), open = sum(inv.filter((i) => i.status === "sent"), (i) => i.amount);
+  const p = k ? contractProgress(k) : null;
+  const txs = S.transactions.filter((x) => x.client_id === c.id && !x.invoice_id);
+  const events = [
+    ...inv.map((i) => ({ d: i.issue_date, tone: "blue", title: `${i.number} emitido`, sub: `${i.description} · vence ${fdate(i.due_date)}`, amt: money(i.amount, i.currency), inv: i })),
+    ...inv.filter((i) => i.paid_at).map((i) => ({ d: i.paid_at, tone: "teal", title: `${i.number} pago`, sub: "entrada lançada no financeiro", amt: "+" + money(i.amount, i.currency) })),
+    ...txs.map((x) => ({ d: x.date, tone: x.type === "in" ? "teal" : "coral", title: x.description, sub: NATURES[x.nature], amt: (x.type === "in" ? "+" : "−") + money(x.amount, x.currency) })),
+    ...ks.map((x) => ({ d: x.start_date, tone: "coral", title: `Contrato: ${x.title}`, sub: `${money(x.monthly_fee, x.currency, 0)}/mês${+x.setup_fee ? ` + setup ${money(x.setup_fee, x.currency, 0)}` : ""}` })),
+    ...ks.filter((x) => x.renewal_date && x.renewal_date >= t).map((x) => ({ d: x.renewal_date, tone: "amber", title: "Fim do período mínimo", sub: x.notice_days ? `aviso até ${fdate(addDays(x.renewal_date, -x.notice_days))}` : "", future: true })),
+  ].sort((a, b) => b.d.localeCompare(a.d));
+  $("#view").innerHTML = `${topbar(`<button class="ghost small" id="back">← Clientes</button> <span style="margin-left:10px">${esc(c.company)}</span>`,
+      `${esc(CLIENT_STATUS[c.status])} · ${ENTITY[c.entity]}${c.contact_name ? ` · ${esc(c.contact_name)}` : ""}`,
+      `<div class="actions"><button class="ghost" id="edit-client">Editar</button>${k ? `<button class="ghost" id="edit-contract">Contrato</button>` : `<button class="ghost" id="new-contract">+ Contrato</button>`}<button class="primary" id="new-invoice">${ic("plus")} Invoice</button></div>`)}
+    <div class="kpis">
+      <div class="panel kpi accent"><div class="k">Já pagou</div><div class="v" data-count="${paid}" data-cur="${cur}">${short(paid, cur)}</div><div class="s">${inv.filter((i) => i.status === "paid").length} invoice(s)</div></div>
+      <div class="panel kpi"><div class="k">Em aberto</div><div class="v" data-count="${open}" data-cur="${cur}">${short(open, cur)}</div><div class="s">${inv.filter((i) => invoiceState(i) === "late").length} atrasado(s)</div></div>
+      ${k ? `<div class="panel kpi"><div class="k">Valor do contrato</div><div class="v" data-count="${+k.setup_fee + k.monthly_fee * (k.min_months || 1)}" data-cur="${cur}">${short(+k.setup_fee + k.monthly_fee * (k.min_months || 1), cur)}</div><div class="s">setup + ${k.min_months || 1} meses</div></div>` : ""}
+      <div class="panel kpi"><div class="k">Cliente desde</div><div class="v" style="font-size:21px">${fdate(k?.start_date || c.created_at)}</div><div class="s">${daysBetween(k?.start_date || c.created_at.slice(0, 10), t)} dias</div></div>
+    </div>
+    <div class="grid-home">
+      <div class="panel pad"><div class="ph"><h2>Linha do tempo</h2><span class="hint">${events.length} eventos</span></div>
+        <div class="timeline">${events.map((e) => `<div class="ev ${e.future ? "future" : ""}"><span class="evdot ${e.tone}"></span>
+          <div class="t"><b>${esc(e.title)}</b><span>${fdate(e.d)}${e.sub ? ` · ${esc(e.sub)}` : ""}</span></div>${e.amt ? `<span class="a mono">${esc(e.amt)}</span>` : ""}
+          ${e.inv ? `<button class="small ghost" data-print="${e.inv.id}">Ver</button>` : ""}</div>`).join("") || `<div class="empty">Nada ainda</div>`}</div></div>
+      <div class="stack">
+        ${k ? `<div class="panel pad"><div class="ph"><h2>Contrato</h2><span class="badge ${k.status}">${esc(CONTRACT_STATUS[k.status])}</span></div>
+          <div style="color:var(--ink);font-weight:600">${esc(k.title)}</div>
+          <div class="cnum"><span class="mono">${money(k.monthly_fee, k.currency, 0)}</span><small>/mês · ${esc(VAT_MODE[k.vat_mode])}</small></div>
+          <div class="meter coral"><i style="width:${p.pct}%"></i></div>
+          <div class="sub" style="display:flex;justify-content:space-between;margin-top:6px"><span>${k.min_months ? `mês ${p.months} de ${k.min_months}` : ""}</span><span>${p.left !== null && p.left >= 0 ? `${p.left} dias para renovar` : "mês a mês"}</span></div>
+          <div class="kv"><span>Início</span><b>${fdate(k.start_date)}</b><span>Fim do mínimo</span><b>${fdate(k.renewal_date) || "—"}</b><span>Aviso prévio</span><b>${k.notice_days ? `${k.notice_days} dias` : "—"}</b><span>Cobrança</span><b>todo dia ${k.billing_day || 1}</b>${+k.setup_fee ? `<span>Setup</span><b>${money(k.setup_fee, k.currency, 0)}</b>` : ""}</div>
+          ${k.notes ? `<div class="sub" style="margin-top:12px">${esc(k.notes)}</div>` : ""}</div>` : ""}
+        <div class="panel pad"><div class="ph"><h2>Contato</h2></div><div class="kv">
+          ${c.contact_name ? `<span>Nome</span><b>${esc(c.contact_name)}</b>` : ""}${c.email ? `<span>E-mail</span><b><a href="mailto:${esc(c.email)}">${esc(c.email)}</a></b>` : ""}
+          ${c.phone ? `<span>Telefone</span><b>${esc(c.phone)}</b>` : ""}${c.legal_name ? `<span>Razão social</span><b>${esc(c.legal_name)}</b>` : ""}
+          ${c.address ? `<span>Endereço</span><b style="white-space:pre-line">${esc(c.address)}</b>` : ""}</div>
+          ${c.notes ? `<div class="sub" style="margin-top:12px">${esc(c.notes)}</div>` : ""}</div>
+      </div>
+    </div>`;
+  $("#back").onclick = () => go("clients");
+  $("#edit-client").onclick = () => clientForm(c);
+  if ($("#edit-contract")) $("#edit-contract").onclick = () => contractForm(k);
+  if ($("#new-contract")) $("#new-contract").onclick = () => contractForm({ client_id: c.id });
+  $("#new-invoice").onclick = () => invoiceForm({ client_id: c.id }, true);
+  $$("[data-print]").forEach((b) => (b.onclick = () => printInvoice(S.invoices.find((i) => i.id === b.dataset.print))));
 }
 
 function clientForm(c = {}, afterSave) {
@@ -692,11 +809,35 @@ function nextNumber(entity) {
   return "INV-" + String(n + 1).padStart(4, "0");
 }
 
+function monthlyDue() {
+  const month = today().slice(0, 7);
+  return S.contracts.filter((k) => k.status === "active" && +k.monthly_fee > 0
+    && !S.invoices.some((i) => i.contract_id === k.id && i.issue_date.startsWith(month) && i.status !== "cancelled" && /month/i.test(i.description)));
+}
+
+function emailText(i) {
+  const c = clientById(i.client_id) || {}, first = (c.contact_name || "").split(" ")[0] || "there";
+  const period = ((i.detail || "").match(/Period: ([^.]+)/) || [])[1]?.replace(/^1 to/, "1 to");
+  return `Hi ${first},
+
+Please find attached invoice ${i.number} for ${moneyEn(i.amount, i.currency)}: ${i.description}${period ? ` (${period})` : ""}.
+
+It's due on ${enDate(i.due_date)}. Payment details are on the invoice; please use ${i.number} as the reference.
+
+Thanks,
+Eli`;
+}
+async function copyText(txt) {
+  try { await navigator.clipboard.writeText(txt); toast("Texto do e-mail copiado"); }
+  catch { form({ title: "Texto do e-mail", fields: [{ k: "t", label: "Copie o texto", type: "textarea", full: true }], values: { t: txt }, saveLabel: "Fechar", onSave: async () => {} }); }
+}
+
 function invoices() {
   const list = S.invoices;
   const st = (s) => list.filter((i) => invoiceState(i) === s);
   const tot = (arr) => sum(arr, (i) => conv(i.amount, i.currency, "EUR"));
-  $("#view").innerHTML = `${topbar("Invoices", `${list.length} no total`, `<button class="primary" id="new-inv">${ic("plus")} Invoice</button>`)}
+  const due = monthlyDue(), mName = MONTHS_FULL[+today().slice(5, 7) - 1];
+  $("#view").innerHTML = `${topbar("Invoices", `${list.length} no total`, `<div class="actions">${due.length ? `<button class="ghost" id="batch">${ic("file")} Gerar invoices de ${mName} <span class="count">${due.length}</span></button>` : ""}<button class="primary" id="new-inv">${ic("plus")} Invoice</button></div>`)}
     <div class="kpis">
       <div class="panel kpi ${st("late").length ? "accent" : ""}"><div class="k">Atrasados</div><div class="v" data-count="${tot(st("late"))}" data-cur="EUR">${short(tot(st("late")), "EUR")}</div><div class="s">${st("late").length} invoice(s)</div></div>
       <div class="panel kpi"><div class="k">Em aberto</div><div class="v" data-count="${tot(st("open"))}" data-cur="EUR">${short(tot(st("open")), "EUR")}</div><div class="s">${st("open").length} invoice(s)</div></div>
@@ -710,14 +851,36 @@ function invoices() {
       <td class="num mono" style="color:var(--ink)">${money(i.amount, i.currency)}</td>
       <td><span class="badge ${s}">${INVOICE_LABEL[s]}</span>${i.paid_at ? `<div class="sub mono" style="margin-top:3px">${fdate(i.paid_at)}</div>` : ""}</td>
       <td class="nowrap"><div class="actions">
-        <button class="small ghost" data-print="${i.id}">PDF</button>
+        <button class="small ghost" data-print="${i.id}">Ver / PDF</button>
+        <button class="small ghost" data-mail="${i.id}">E-mail</button>
         ${i.status === "sent" ? `<button class="small primary" data-paid="${i.id}">Recebido</button>` : ""}
         <button class="small ghost" data-edit="${i.id}">Editar</button></div></td></tr>`; }).join("") || `<tr><td colspan="7" class="empty">Nenhum invoice</td></tr>`}
     </tbody></table></div></div>`;
   $("#new-inv").onclick = () => invoiceForm();
-  $$("[data-print]").forEach((b) => (b.onclick = () => printInvoice(S.invoices.find((i) => i.id === b.dataset.print))));
-  $$("[data-paid]").forEach((b) => (b.onclick = () => paidForm(S.invoices.find((i) => i.id === b.dataset.paid))));
-  $$("[data-edit]").forEach((b) => (b.onclick = () => invoiceForm(S.invoices.find((i) => i.id === b.dataset.edit))));
+  if ($("#batch")) $("#batch").onclick = batchForm;
+  const find = (id) => S.invoices.find((i) => i.id === id);
+  $$("[data-print]").forEach((b) => (b.onclick = () => printInvoice(find(b.dataset.print))));
+  $$("[data-mail]").forEach((b) => (b.onclick = () => copyText(emailText(find(b.dataset.mail)))));
+  $$("[data-paid]").forEach((b) => (b.onclick = () => paidForm(find(b.dataset.paid))));
+  $$("[data-edit]").forEach((b) => (b.onclick = () => invoiceForm(find(b.dataset.edit))));
+}
+
+function batchForm() {
+  const due = monthlyDue(), pay = S.settings.invoice_ie?.payment_days || 7;
+  const d = new Date(), month = MONTHS_EN[d.getMonth()], y = d.getFullYear(), last = new Date(y, d.getMonth() + 1, 0).getDate();
+  const nums = {}; const next = (e) => { nums[e] = nums[e] ? "INV-" + String(+nums[e].slice(4) + 1).padStart(4, "0") : nextNumber(e); return nums[e]; };
+  const drafts = due.map((k) => {
+    const nth = S.invoices.filter((i) => i.contract_id === k.id && /monthly/i.test(i.description) && i.status !== "cancelled").length + 1;
+    return { entity: k.entity, number: next(k.entity), client_id: k.client_id, contract_id: k.id, currency: k.currency, issue_date: today(), due_date: addDays(today(), pay),
+      description: `Monthly partnership: month ${nth}${k.min_months && nth <= k.min_months ? ` of ${k.min_months}` : ""}`, detail: `Period: 1 to ${last} ${month} ${y}.`, amount: k.monthly_fee, status: "sent" };
+  });
+  form({
+    title: `Invoices de ${MONTHS_FULL[d.getMonth()]}`,
+    note: drafts.map((x) => `<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0"><span><b style="color:var(--ink)">${esc(x.number)}</b> · ${esc(clientById(x.client_id)?.company)}<br><span class="sub">${esc(x.description)} · vence ${fdate(x.due_date)}</span></span><b class="mono" style="color:var(--ink)">${money(x.amount, x.currency)}</b></div>`).join("")
+      + `<div class="sub" style="margin-top:8px">Depois de criar, abra cada um em “Ver / PDF” para baixar, e use “E-mail” para copiar o texto.</div>`,
+    fields: [], saveLabel: `Criar ${drafts.length} invoice${drafts.length > 1 ? "s" : ""}`,
+    onSave: async () => { for (const x of drafts) await save("invoices", x); await refresh(`${drafts.length} invoice(s) criado(s)`); },
+  });
 }
 
 function suggestFromContract(clientId, set) {
@@ -820,7 +983,11 @@ tbody td b{display:block;color:var(--ink);font-weight:600;margin-bottom:3px}tbod
 .card dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 14px}.card dt{color:var(--muted)}.card dd{margin:0;color:var(--ink);font-weight:500;white-space:nowrap}.card p{margin:0 0 6px}
 footer{margin-top:auto;padding-top:22px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
 footer em{font:600 italic 13px Lora,serif;color:var(--coral)}
-</style></head><body><div class="page">
+.bar{position:sticky;top:0;z-index:2;display:flex;gap:8px;justify-content:center;padding:12px;background:#2C2C2A}
+.bar button{font:600 13px "Work Sans",sans-serif;border:0;border-radius:10px;padding:9px 16px;cursor:pointer;background:#F1EFE8;color:#2C2C2A}
+.bar button.p{background:#D85A30;color:#fff}
+@media print{.bar{display:none}}
+</style></head><body><div class="bar"><button class="p" id="pr">Imprimir / salvar PDF</button><button id="cp">Copiar texto do e-mail</button></div><div class="page">
 <header><div><div class="brand"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
 <span><em>Irish</em> Business Boosters</span></div>
 <div class="from">${esc(s.from_name)}<br>${esc(s.from_address).replace(/, /g, "<br>")}<br>${esc(s.email)} · ${esc(s.website)}</div></div>
@@ -838,29 +1005,75 @@ ${c.contact_name ? `Attn: ${esc(c.contact_name)}<br>` : ""}${esc(c.address).repl
   const w = window.open("", "_blank");
   if (!w) { toast("O navegador bloqueou a janela: libere pop-ups para este site"); return; }
   w.document.open(); w.document.write(html); w.document.close();
-  setTimeout(() => { w.focus(); w.print(); }, 700);
+  w.document.getElementById("pr").addEventListener("click", () => w.print());
+  w.document.getElementById("cp").addEventListener("click", async () => {
+    try { await w.navigator.clipboard.writeText(emailText(i)); w.document.getElementById("cp").textContent = "Copiado ✓"; }
+    catch { w.alert(emailText(i)); }
+  });
+  w.focus();
 }
 
 // ── leads ────────────────────────────────────────────────────────────────────
+const KANBAN = ["new", "replied", "check_sent", "call_requested", "call_booked", "client", "lost"];
+
 function leads() {
-  $("#view").innerHTML = `${topbar("Leads", `${S.leads.filter((l) => l.status === "new").length} novo(s) · últimos 300`)}
-    <div class="panel"><div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Quem</th><th>Contato</th><th>Origem</th><th>Status</th><th></th></tr></thead><tbody>
-    ${S.leads.map((l) => `<tr>
-      <td class="nowrap mono sub">${fdate(l.created_at)}</td>
-      <td><b style="color:var(--ink)">${esc(l.name || "—")}</b><div class="sub">${esc([l.business, l.town].filter(Boolean).join(" · "))}</div>
-        ${l.message ? `<div class="sub" style="max-width:360px">${esc(l.message.slice(0, 160))}${l.message.length > 160 ? "…" : ""}</div>` : ""}</td>
-      <td class="sub">${esc([l.email, l.phone, l.ig_username && "@" + l.ig_username, l.website].filter(Boolean).join(" · "))}</td>
-      <td class="nowrap sub">${esc([l.source, l.keyword, l.interest].filter(Boolean).join(" · "))}</td>
-      <td><select data-lead="${l.id}" style="min-width:140px">${Object.entries(LEAD_STATUS).map(([k, v]) => `<option value="${k}" ${l.status === k ? "selected" : ""}>${v}</option>`).join("")}</select></td>
-      <td>${l.status !== "client" ? `<button class="small ghost" data-convert="${l.id}">Virar cliente</button>` : ""}</td></tr>`).join("") || `<tr><td colspan="6" class="empty">Nenhum lead</td></tr>`}
-    </tbody></table></div></div>`;
-  $$("[data-lead]").forEach((s) => (s.onchange = async () => { await save("leads", { status: s.value }, s.dataset.lead); toast("Status atualizado"); const l = S.leads.find((x) => x.id === s.dataset.lead); l.status = s.value; renderNav(); }));
-  $$("[data-convert]").forEach((b) => (b.onclick = () => {
-    const l = S.leads.find((x) => x.id === b.dataset.convert);
-    clientForm({ company: l.business || l.name || "", contact_name: l.name, email: l.email, phone: l.phone, status: "prospect", entity: "IE", lead_id: l.id,
-      notes: [l.message, l.keyword && "Palavra: " + l.keyword].filter(Boolean).join("\n") },
-      async () => { await save("leads", { status: "client" }, l.id); });
-  }));
+  const by = Object.fromEntries(KANBAN.map((k) => [k, S.leads.filter((l) => l.status === k)]));
+  $("#view").innerHTML = `${topbar("Leads", `${by.new.length} novo(s) · arraste o card para mudar de etapa`)}
+    <div class="kanban">${KANBAN.map((k) => `<div class="col" data-col="${k}">
+      <div class="colh"><span class="badge ${k}">${esc(LEAD_STATUS[k])}</span><span class="mono sub">${by[k].length}</span></div>
+      <div class="cards-col">${by[k].map((l) => `<div class="lead panel" draggable="true" data-lead="${l.id}">
+        <b>${esc(l.business || l.name || "—")}</b>
+        ${l.business && l.name ? `<div class="sub">${esc(l.name)}</div>` : ""}
+        ${l.message ? `<p>${esc(l.message.slice(0, 90))}${l.message.length > 90 ? "…" : ""}</p>` : ""}
+        <div class="lf"><span>${esc([l.source === "site_form" ? "site" : l.source, l.keyword].filter(Boolean).join(" · "))}</span><span class="mono">${fdate(l.created_at).slice(0, 5)}</span></div>
+      </div>`).join("") || `<div class="drop-hint">—</div>`}</div></div>`).join("")}</div>`;
+
+  let dragged = null;
+  $$(".lead[data-lead]").forEach((el) => {
+    el.ondragstart = (e) => { dragged = el.dataset.lead; el.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", dragged); };
+    el.ondragend = () => el.classList.remove("dragging");
+    el.onclick = () => leadDrawer(S.leads.find((l) => l.id === el.dataset.lead));
+  });
+  $$(".col[data-col]").forEach((col) => {
+    col.ondragover = (e) => { e.preventDefault(); col.classList.add("over"); };
+    col.ondragleave = () => col.classList.remove("over");
+    col.ondrop = async (e) => {
+      e.preventDefault(); col.classList.remove("over");
+      const id = dragged || e.dataTransfer.getData("text/plain"), l = S.leads.find((x) => x.id === id);
+      if (!l || l.status === col.dataset.col) return;
+      if (col.dataset.col === "client") return convertLead(l);
+      const before = l.status; l.status = col.dataset.col; leads(); renderNav();
+      try { await save("leads", { status: l.status }, l.id); toast(`Movido para “${LEAD_STATUS[l.status]}”`, ["Desfazer", async () => { l.status = before; await save("leads", { status: before }, l.id); leads(); renderNav(); }]); }
+      catch { l.status = before; leads(); }
+    };
+  });
+}
+
+function convertLead(l) {
+  clientForm({ company: l.business || l.name || "", contact_name: l.name, email: l.email, phone: l.phone, status: "prospect", entity: "IE", lead_id: l.id,
+    notes: [l.message, l.keyword && "Palavra: " + l.keyword].filter(Boolean).join("\n") },
+    async () => { await save("leads", { status: "client" }, l.id); });
+}
+
+function leadDrawer(l) {
+  form({
+    title: l.business || l.name || "Lead",
+    note: esc([fdate(l.created_at), l.source, l.keyword && "palavra " + l.keyword, l.interest].filter(Boolean).join(" · "))
+      + (l.message ? `<p style="margin:10px 0 0;color:var(--body);white-space:pre-line">${esc(l.message)}</p>` : "")
+      + (l.audit ? `<p class="sub" style="margin:10px 0 0">Tem resultado do check automático salvo.</p>` : ""),
+    values: l,
+    fields: [
+      { k: "status", label: "Etapa", type: "select", options: LEAD_STATUS },
+      { k: "name", label: "Nome" }, { k: "business", label: "Empresa" },
+      { k: "email", label: "E-mail", type: "email" }, { k: "phone", label: "Telefone" },
+      { k: "ig_username", label: "Instagram" }, { k: "website", label: "Site" },
+      { k: "notes", label: "Notas", type: "textarea", full: true },
+    ],
+    deleteLabel: "Virar cliente",
+    onDelete: async () => { convertLead(l); },
+    onSave: async (v) => { await save("leads", v, l.id); await refresh("Lead atualizado"); },
+  });
+  const del = $("#modal #del"); if (del) { del.className = "ghost left"; del.onclick = () => { $("#modal").hidden = true; convertLead(l); }; }
 }
 
 gate();
