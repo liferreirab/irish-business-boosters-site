@@ -5,7 +5,7 @@
 "use strict";
 
 const SUPABASE_URL = "https://tbgxeqauakiydzwmqyyf.supabase.co";
-const SUPABASE_ANON_KEY = ""; // public "anon" key (Supabase → Project Settings → API)
+const SUPABASE_ANON_KEY = "sb_publishable_6W3WVHfj1xqSDpv1c_4Nfg_jd__XOyA"; // publishable key: public by design, the database rules do the protecting
 const IDLE_MINUTES = 30;
 const VAT_THRESHOLD_EUR = 42500;
 
