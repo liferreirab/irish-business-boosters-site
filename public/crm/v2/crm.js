@@ -298,7 +298,7 @@ const pathOf = (pts) => pts.map((p, i) => {
 }).join("");
 
 function bigChart() {
-  const W = 760, H = 240, P = { l: 8, r: 8, t: 14, b: 26 };
+  const W = 760, H = 280, P = { l: 8, r: 8, t: 14, b: 26 };
   const s = series(), prev = series(12, 1), cur = viewCur();
   const max = Math.max(1, ...s.map((x) => Math.max(x.inc, x.out)), ...prev.map((x) => x.inc)) * 1.12;
   const X = (i) => P.l + (i * (W - P.l - P.r)) / (s.length - 1), Y = (v) => H - P.b - (v / max) * (H - P.t - P.b);
@@ -327,7 +327,7 @@ function bindChart() {
   const box = $("#chart"); if (!box) return;
   const svg = $("svg", box), tip = $("#tip", box), cur = box.dataset.cur;
   const s = series(), prev = series(12, 1);
-  const W = 760, H = 240, P = { l: 8, r: 8, t: 14, b: 26 };
+  const W = 760, H = 280, P = { l: 8, r: 8, t: 14, b: 26 };
   const max = Math.max(1, ...s.map((x) => Math.max(x.inc, x.out)), ...prev.map((x) => x.inc)) * 1.12;
   const X = (i) => P.l + (i * (W - P.l - P.r)) / (s.length - 1), Y = (v) => H - P.b - (v / max) * (H - P.t - P.b);
   const show = (clientX) => {
@@ -430,7 +430,7 @@ function overview() {
 
   $("#view").innerHTML = `
     ${topbar(`${hello}, <span class="serif">Eli</span>`, dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1), entSwitch())}
-    <div class="kpis">
+    <div class="kpis six">
       ${kpi(`Receita de ${MONTHS_FULL[+t.slice(5, 7) - 1]}`, revM, cur, `${deltaTag(revM, revPM)} vs mesmos dias de ${MONTHS_FULL[+prevMonth.slice(5) - 1]}`, spark(sp.map((x) => x.inc), "#5DCAA5"), "accent")}
       ${kpi(`Receita ${y}`, revY, cur, `${deltaTag(revY, revLY)} vs mesmo período de ${y - 1}`)}
       ${kpi(`Resultado ${y}`, revY - costY, cur, "receita − despesas e impostos")}
@@ -440,7 +440,7 @@ function overview() {
     </div>
     <div class="grid-home">
       <div class="stack">
-        <div class="panel pad"><div class="ph"><h2>Precisa de você</h2><span class="hint">${todos.length ? `${todos.length} item${todos.length > 1 ? "s" : ""}` : "hoje"}</span></div>
+        <div class="panel pad"><div class="ph"><h2>Precisa de você</h2><span class="hint">${todos.length ? `${todos.length} ${todos.length > 1 ? "itens" : "item"}` : "hoje"}</span></div>
           ${todos.length ? `<div class="today">${todos.map((it, n) => `<div class="todo" style="animation-delay:${n * 60}ms">
               <span class="ic ${it.tone}">${ic(it.icon)}</span>
               <div class="tx"><b>${esc(it.title)}</b><span>${esc(it.sub)}</span></div>
@@ -455,7 +455,7 @@ function overview() {
           <div class="clientmini">${activeClients.map((k) => {
             const c = clientById(k.client_id), months = S.invoices.filter((i) => i.contract_id === k.id && /month/i.test(i.description) && i.status !== "cancelled").length;
             const pct = k.min_months ? Math.min(100, (months / k.min_months) * 100) : 100, left = k.renewal_date ? daysBetween(t, k.renewal_date) : null;
-            return `<div class="row"><b>${esc(c?.company)}</b><span class="m">${money(k.monthly_fee, k.currency, 0)}<span class="sub">/mês</span></span>
+            return `<div class="row"><b>${esc(c?.company)}</b><span class="m nowrap">${money(k.monthly_fee, k.currency, 0)}<small style="color:var(--muted);font-weight:400"> /mês</small></span>
               <div class="meter coral"><i style="width:${pct}%"></i></div>
               <div class="sub"><span>${k.min_months ? `mês ${months} de ${k.min_months}` : esc(k.title)}</span><span>${left !== null ? (left >= 0 ? `renova em ${left} dias` : "mês a mês") : ""}</span></div></div>`;
           }).join("") || `<div class="empty">Nenhum contrato ativo</div>`}</div>
@@ -531,7 +531,7 @@ function finance() {
   const byCat = {};
   inYear.filter((t) => t.nature === "despesa" || (F.card && t.nature === "detalhe_cartao")).forEach((t) => { const k = t.category || "Outros"; byCat[k] = (byCat[k] || 0) + +t.amount; });
   const top = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, 8);
-  const barList = (o) => { const t = top(o), mx = Math.max(1, ...t.map((x) => x[1])); return t.map(([k, v]) => `<div style="display:block"><div style="display:flex;justify-content:space-between;gap:10px"><span>${esc(k)}</span><b>${money(v, cur, 0)}</b></div><div class="meter coral" style="margin-top:6px;height:5px"><i style="width:${(v / mx) * 100}%"></i></div></div>`).join(""); };
+  const barList = (o) => { const t = top(o), mx = Math.max(1, ...t.map((x) => x[1])); return t.map(([k, v], n) => `<div class="r"><div class="top"><span>${esc(k)}</span><b>${money(v, cur, 0)}</b></div><div class="bar"><i style="width:${(v / mx) * 100}%;animation-delay:${n * 60}ms"></i></div></div>`).join(""); };
 
   $("#view").innerHTML = `
     ${topbar("Financeiro", `${ENTITY[F.entity]} · ${F.year === "all" ? "todos os anos" : F.year}`, `<button class="primary" id="new-tx">${ic("plus")} Lançamento</button>`)}
@@ -550,8 +550,8 @@ function finance() {
       <div class="panel kpi"><div class="k">Pró-labore</div><div class="v" data-count="${tot("pro_labore")}" data-cur="${cur}">${short(tot("pro_labore"), cur)}</div><div class="s">&nbsp;</div></div>
     </div>
     <div class="section split">
-      <div class="panel pad"><div class="ph"><h2>Receita por cliente</h2></div><div class="list">${barList(byClient) || `<div class="empty">Nada no período</div>`}</div></div>
-      <div class="panel pad"><div class="ph"><h2>Despesas por categoria</h2></div><div class="list">${barList(byCat) || `<div class="empty">${F.entity === "BR" && !F.card ? "Quase tudo passa pelo cartão: marque “itens do cartão”" : "Nada no período"}</div>`}</div></div>
+      <div class="panel pad"><div class="ph"><h2>Receita por cliente</h2></div><div class="blist in">${barList(byClient) || `<div class="empty">Nada no período</div>`}</div></div>
+      <div class="panel pad"><div class="ph"><h2>Despesas por categoria</h2></div><div class="blist out">${barList(byCat) || `<div class="empty">${F.entity === "BR" && !F.card ? "Quase tudo passa pelo cartão: marque “itens do cartão”" : "Nada no período"}</div>`}</div></div>
     </div>
     <div class="section panel"><div class="ph" style="padding:16px 18px 0"><h2>Lançamentos <span class="sub">(${rows.length})</span></h2></div>
     <div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Conta</th><th class="num">Valor</th></tr></thead><tbody>
